@@ -18,10 +18,14 @@ export async function loadLibrary() {
   if (state.lib.downloads.some(d => d.state === "running")) timer = setTimeout(loadLibrary, 2000);
 }
 
-// engine for a weights file: from the engines' file_ext, installed engines first (null: none)
-function engineFor(name) {
+// engine for a weights file: from the engines' file_ext, installed engines first (null: none).
+// When several engines load the file, the one whose kinds cover the model's kind wins (a TTS
+// repository suggests the TTS engine, not the first safetensors server).
+function engineFor(name, kind) {
   const fits = Object.entries(state.engines).filter(([, e]) => e.file_ext.some(x => name.endsWith(x)));
-  return (fits.find(([, e]) => e.installed) || fits[0] || [null])[0];
+  const byKind = kind ? fits.filter(([, e]) => e.kinds?.includes(kind)) : [];
+  const pool = byKind.length ? byKind : fits;
+  return (pool.find(([, e]) => e.installed) || pool[0] || [null])[0];
 }
 
 function downloadHtml(d) {
@@ -42,7 +46,7 @@ function deleteHtml(path, label, usedBy) {
   }
   return `<button class="link" data-del="${esc(path)}" data-label="${esc(label)}" style="color:var(--err)">${esc(t("ui.lib.delete"))}</button>`;
 }
-const useHtml = (x, task) => x.path && engineFor(x.name) && !x.used_by?.length
+const useHtml = (x, task) => x.path && engineFor(x.name, state.taskKind[task]) && !x.used_by?.length
   ? `<button class="link" data-use="${esc(x.path)}" data-task="${esc(task || "")}">${esc(t("ui.lib.add_model"))}</button>` : "";
 
 function itemHtml(it) {
@@ -89,7 +93,7 @@ async function downloadSelection(repo) {
 
 function addAsModel(path, task) {
   const name = path.split("/").pop();
-  openModelForm(null, { file: state.lib.dir + "/" + path, engine: engineFor(name), task,
+  openModelForm(null, { file: state.lib.dir + "/" + path, engine: engineFor(name, state.taskKind[task]), task,
     kind: state.taskKind[task] || "llm", name: name.replace(/\.[^.]+$/, "") });
 }
 

@@ -72,6 +72,19 @@ def test_variants_group_shards_and_suggest_missing_engines():
     assert "config.json" in st["files"] and suggested == ["safetensors"]
 
 
+def test_tts_repository_suggests_the_tts_engine():
+    tts = make_engine(label="omni", kinds=["tts"], file_ext=[".safetensors"])
+    files = [{"name": "model.safetensors", "size": 4 * GB}, {"name": "config.json", "size": 1000}]
+    asked = []
+    ctx = compat.Context(engines={"llama": make_engine(), "omni": tts}, hw=HW,
+                         installed=lambda eid: eid == "llama", lib_has=lambda rel: True,
+                         suggest=lambda fmt, kind, repo: asked.append((fmt, kind)) or {"id": "omni"})
+    [v] = compat.variants("Qwen/tts", files, "tts", ctx)
+    assert v["verdict"] == "incompatible" and v["suggest"] == {"id": "omni"}
+    assert asked == [("safetensors", "tts")]
+    assert v["files"] == ["model.safetensors", "config.json"]
+
+
 def test_quant_of():
     assert compat.quant_of("Qwen3-27B-UD-Q4_K_XL.gguf") == "Q4_K_XL"
     assert compat.quant_of("model-NVFP4.ninfer") == "NVFP4"

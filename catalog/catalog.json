@@ -66,6 +66,31 @@
       }
     }
   },
+  "vllm-omni": {
+    "label": "vLLM-Omni",
+    "desc": {
+      "en": "OpenAI server for text-to-speech models (Qwen3-TTS and others): /v1/audio/speech. Needs a CUDA GPU, nightly wheels.",
+      "fr": "Serveur OpenAI pour les modèles de synthèse vocale (Qwen3-TTS et autres) : /v1/audio/speech. GPU CUDA requis, wheels nightly."
+    },
+    "url": "https://github.com/vllm-project/vllm-omni",
+    "dir": "~/llm/vllm-omni",
+    "detect": ".venv/bin/vllm",
+    "script": "vllm-omni.sh",
+    "disk_gb": 12,
+    "minutes": 15,
+    "engine": {
+      "label": "vLLM-Omni",
+      "kinds": ["tts"],
+      "file_ext": [".safetensors"],
+      "loads_dir": true,
+      "command": ["~/llm/vllm-omni/vllm-omni-serve.sh", "{file_dir}", "--served-model-name", "{model_id}",
+                  "--host", "0.0.0.0", "--port", "{port}"],
+      "health": "/health",
+      "endpoint": "/v1",
+      "procs": ["vllm-omni-serve.sh", "vllm"],
+      "match_file": true
+    }
+  },
   "ninfer": {
     "label": "Ninfer",
     "desc": {
