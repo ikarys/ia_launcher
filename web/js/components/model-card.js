@@ -2,14 +2,12 @@
 import { api } from "../api.js";
 import { $, esc } from "../dom.js";
 import { emit } from "../events.js";
-import { dur, gb, initials } from "../format.js";
+import { decimal, dur, gb, initials } from "../format.js";
+import { t } from "../i18n.js";
 import { seg, state } from "../state.js";
 import { openModelForm } from "./model-form.js";
 import { fill, spark, track } from "./sparkline.js";
 
-const STATE = { stopped: "Arrêté", starting: "Chargement…", ready: "Prêt", stopping: "Arrêt…", error: "Erreur" };
-const VRAM_HOW = { live: "VRAM (mesurée)", estimate: "VRAM (estimée)", load: "VRAM (au chargement)",
-                   shared: "VRAM (partagée)", cpu: "VRAM · tourne sur CPU" };
 const openLogs = new Set();
 
 export function cardHtml(id, m, hidden) {
@@ -28,16 +26,16 @@ export function cardHtml(id, m, hidden) {
         <div class="metric"><div class="m"><i data-k="vramM"></i></div><b data-k="vram">–</b><span data-k="vramHow">VRAM</span></div>
         <div class="metric"><div class="m"><i data-k="ramM"></i></div><b data-k="ram">–</b><span>RAM</span></div>
         <div class="metric"><div data-k="cpuSpark"></div><b data-k="cpu">–</b><span data-k="cpuSub">CPU</span></div>
-        <div class="metric"><b data-k="uptime">–</b><span>en route depuis</span></div>
+        <div class="metric"><b data-k="uptime">–</b><span>${esc(t("ui.card.uptime"))}</span></div>
       </div>
       <div class="opts">${optionsHtml(m)}</div>
       <div class="endpoint" data-k="endpoint"></div>
       <div class="actions">
-        <button class="primary" data-act="start">Démarrer</button>
-        <button class="danger" data-act="stop">Arrêter</button>
-        <button class="link" data-act="logs">Logs</button>
-        ${m.repo ? `<button class="link" data-act="update">Vérifier MAJ</button>` : ""}
-        <button class="link" data-act="edit">Modifier</button>
+        <button class="primary" data-act="start">${esc(t("ui.card.start"))}</button>
+        <button class="danger" data-act="stop">${esc(t("ui.card.stop"))}</button>
+        <button class="link" data-act="logs">${esc(t("ui.card.logs"))}</button>
+        ${m.repo ? `<button class="link" data-act="update">${esc(t("ui.card.check_update"))}</button>` : ""}
+        <button class="link" data-act="edit">${esc(t("ui.card.edit"))}</button>
       </div>
       <div class="msg" data-k="msg"></div>
       <div class="meta" data-k="update" hidden></div>
@@ -49,16 +47,16 @@ export function cardHtml(id, m, hidden) {
 function optionsHtml(m) {
   if (!m.options.length) return "";
   return `
-    <label>Profil
+    <label>${esc(t("ui.card.profile"))}
       <select data-profile>${Object.keys(m.profiles).map(p => `<option>${esc(p)}</option>`).join("")
-        }<option value="">personnalisé</option></select>
+        }<option value="">${esc(t("ui.card.custom"))}</option></select>
     </label>${m.options.map(o => `
     <label>${esc(o.label)}
       <select data-opt="${o.key}">${o.choices.map(([v, l]) =>
         `<option value="${esc(v)}"${v === o.default ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>
     </label>`).join("")}
-    <button class="link" data-act="saveprof">Enregistrer le profil…</button>
-    <button class="link" data-act="delprof">Supprimer le profil</button>`;
+    <button class="link" data-act="saveprof">${esc(t("ui.card.save_profile"))}</button>
+    <button class="link" data-act="delprof">${esc(t("ui.card.delete_profile"))}</button>`;
 }
 
 // profile = a set of option values: picking one fills the menus, touching a menu resyncs the profile
@@ -95,8 +93,8 @@ const showError = (card, err) => { $("[data-k=msg]", card).textContent = err.mes
 
 async function saveOrDeleteProfile(id, card, button, act) {
   const cur = $("[data-profile]", card).value;
-  const name = act === "saveprof" ? prompt("Nom du profil (un nom existant est remplacé) :", cur) : cur;
-  if (!name || (act === "delprof" && !confirm(`Supprimer le profil « ${name} » ?`))) return;
+  const name = act === "saveprof" ? prompt(t("ui.card.profile_prompt"), cur) : cur;
+  if (!name || (act === "delprof" && !confirm(t("ui.card.profile_delete_confirm", { name })))) return;
   try {
     await api(`/api/profile/${id}`, { name, opts: act === "saveprof" ? chosenOptions(card) : null });
     await emit("reload", id);
@@ -122,16 +120,17 @@ async function checkUpdate(id, card, button) {
   try {
     const u = await api(`/api/check/${id}`, {});
     out.innerHTML = u.behind.length
-      ? `<b style="color:var(--warn)">${u.behind.length} commit(s) de retard</b> sur ${esc(u.branch)} (local ${esc(u.current)}) :`
+      ? `<b style="color:var(--warn)">${esc(t("ui.upd.behind", { n: u.behind.length }))}</b> `
+        + esc(t("ui.upd.behind_on", { branch: u.branch, current: u.current }))
         + `<pre class="log">${esc(u.behind.join("\n"))}</pre>`
-        + `<div class="actions" style="margin-top:8px"><button data-act="upgrade">Mettre à jour (pull + compilation)</button></div>`
-      : `À jour : ${esc(u.current)} = ${esc(u.branch)}`;
+        + `<div class="actions" style="margin-top:8px"><button data-act="upgrade">${esc(t("ui.upd.upgrade"))}</button></div>`
+      : esc(t("ui.upd.up_to_date", { current: u.current, branch: u.branch }));
   } catch (err) { out.textContent = ""; showError(card, err); }
   button.disabled = false;
 }
 
 async function upgrade(id, card) {
-  if (!confirm(`Mettre à jour ${state.models[id].engine} ? Le modèle lancé continue de tourner ; la nouvelle version servira au prochain démarrage.`)) return;
+  if (!confirm(t("ui.upd.confirm", { engine: state.models[id].engine }))) return;
   try {
     await api(`/api/update/${id}`, {});
     $("[data-k=update]", card).hidden = true;
@@ -140,7 +139,7 @@ async function upgrade(id, card) {
 }
 
 async function startStop(id, card, button, act) {
-  if (act === "stop" && !confirm(`Arrêter ${state.models[id].name} ?`)) return;
+  if (act === "stop" && !confirm(t("ui.card.stop_confirm", { name: state.models[id].name }))) return;
   button.disabled = true;
   try {
     await api(`/api/${act}/${id}`, act === "start" ? chosenOptions(card) : {});
@@ -164,9 +163,7 @@ async function refreshLog(id) {
   const { log } = await api(`/api/logs/${id}`);
   const atBottom = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 20;
   const s = state.last?.models[id];
-  pre.textContent = log || (s?.managed === false && s?.pids.length
-    ? "Lancé en dehors du launcher (raccourci Windows) : les logs sont dans sa fenêtre PowerShell."
-    : "Pas encore de logs.");
+  pre.textContent = log || t(s?.managed === false && s?.pids.length ? "ui.card.external_logs" : "ui.card.no_logs");
   if (atBottom) pre.scrollTop = pre.scrollHeight;
 }
 
@@ -177,7 +174,8 @@ export function updateCard(id, s, st) {
   $("[data-k=pill]", card).className = "pill " + s.state;
   card.classList.remove("stopped", "starting", "ready", "stopping", "error");
   card.classList.add(s.state);
-  $("[data-k=state]", card).textContent = STATE[s.state] + (s.state === "ready" && !s.managed ? " (externe)" : "");
+  $("[data-k=state]", card).textContent = t("ui.state." + s.state)
+    + (s.state === "ready" && !s.managed ? t("ui.state.external") : "");
   updateMetrics(id, card, s, st, running);
   const lan = st.lan_ip ? `  ·  LAN <code>http://${st.lan_ip}:${m.port}${m.endpoint}</code>` : "";
   $("[data-k=endpoint]", card).innerHTML = s.state === "ready"
@@ -199,14 +197,14 @@ function updateMetrics(id, card, s, st, running) {
   const g = st.gpu;
   $("[data-k=metrics]", card).classList.toggle("off", !running);
   $("[data-k=vram]", card).textContent = !running ? "–" : s.vram_how === "shared" ? "?" : gb(s.vram_mib);
-  $("[data-k=vramHow]", card).textContent = running ? VRAM_HOW[s.vram_how] || "VRAM" : "VRAM";
+  $("[data-k=vramHow]", card).textContent = running && s.vram_how ? t("ui.vram." + s.vram_how) : "VRAM";
   $("[data-k=ram]", card).textContent = running ? gb(s.rss_mib) : "–";
   $("[data-k=cpu]", card).textContent = running ? Math.round(s.cpu_machine_pct) + " %" : "–";
   fill($("[data-k=vramM]", card), running && g && s.vram_how !== "shared" ? s.vram_mib / g.total * 100 : 0);
   fill($("[data-k=ramM]", card), running ? s.rss_mib / st.ram.total_mib * 100 : 0);
   const ch = track("cpu-" + id, running ? s.cpu_machine_pct : 0);
   spark($("[data-k=cpuSpark]", card), ch, Math.max(25, ...ch));
-  $("[data-k=cpuSub]", card).textContent = running ? `CPU · ${(s.cpu_pct / 100).toFixed(1).replace(".", ",")} cœur(s)` : "CPU";
+  $("[data-k=cpuSub]", card).textContent = running ? t("ui.card.cores", { n: decimal(s.cpu_pct / 100) }) : "CPU";
   $("[data-k=uptime]", card).textContent = running ? dur(s.uptime_s) : "–";
 }
 

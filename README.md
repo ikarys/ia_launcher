@@ -7,6 +7,7 @@ Generic: models and inference engines are configuration, nothing model- or engin
 - Per-model VRAM tracking (inferred: `nvidia-smi` under WSL doesn't report per-process memory)
 - Add / edit models and download from Hugging Face from the page, with a "does it run here?" verdict
 - Engine catalog: install an inference engine from the page when a model needs one (like LM Studio's runtimes)
+- Settings page: UI language (English, French) and default theme (auto, light, dark, cyber, pixel, neo)
 - Port conflict detection
 - Windows sleep blocked while a model is loaded (via WSL interop)
 
@@ -27,7 +28,7 @@ Inference engines live outside this project, in `~/llm/<engine>`: install them f
 
 `catalog/catalog.json` lists known engines (llama.cpp, vLLM, Ninfer, laya-serve): what they run, disk / time
 estimates, minimum GPU generation, and the block they add to `engines.json`. Each has an idempotent install
-script `catalog/<engine>.sh` (running it again updates / reconfigures). The page's "Moteurs d'inférence"
+script `catalog/<engine>.sh` (running it again updates / reconfigures). The Settings page's "Inference engines"
 section installs them in the background; the Hugging Face verdicts suggest the missing engine.
 
 No sudo: `catalog/lib.sh` builds against a CUDA toolkit made of NVIDIA's pip wheels (nvcc, cudart, cuBLAS)
@@ -66,7 +67,16 @@ and every param. An argument or env variable that ends up empty is dropped (opti
 **`models.json`**: the models (engine, file, port, params, profiles), written by the page.
 Without it, the launcher starts with an empty list.
 
-**`settings.json`**: UI language (`en`, `fr`: one file per language in `locales/`) and default theme.
+**`settings.json`**: UI language and default theme, set from the Settings page (every browser uses them;
+the header's theme menu can override the theme in one browser).
+
+Any text of `engines.json`, `models.json` or the catalog (labels, descriptions) can be a plain string or
+one per language: `{"en": "Parallel sessions", "fr": "Sessions parallèles"}`.
+
+### Adding a language
+
+Copy `locales/en.json` to `locales/<code>.json` and translate the values: it appears in Settings.
+`just test` checks that every key used by the page and the server exists in every language.
 
 Environment variables: `IA_LAUNCHER_HOST` (default `0.0.0.0`), `IA_LAUNCHER_PORT` (default `8090`),
 `IA_LAUNCHER_MODELS_DIR` (default `~/ia_models`), `HF_TOKEN` (private Hugging Face models).
@@ -90,12 +100,12 @@ The page is `web/`: plain HTML, CSS and native ES modules, no build step.
 
 | Path | Role |
 |---|---|
-| `index.html` | the shell of every view (header, sections, dialog) |
+| `index.html` | the shell of every view (header, sections, dialog), rendered in the UI language by `ialauncher/web/page.py` |
 | `css/` | `tokens.css` (colours, light / dark), `themes/` (cyber, pixel, neo), `base`, `dashboard`, `manage` |
 | `js/main.js` | entry point: picks the view, wires the components, reloads on events |
-| `js/views/` | `dashboard` (system panel + cards), `models-table`, `library` |
+| `js/views/` | `dashboard` (system panel + cards), `models-table`, `library`, `settings` |
 | `js/components/` | `model-card`, `model-form`, `hf-browser`, `engine-catalog`, `sparkline` |
-| `js/*.js` | `api`, `state` (what the page knows), `events` (tiny bus), `dom`, `format`, `theme` |
+| `js/*.js` | `api`, `state` (what the page knows), `events` (tiny bus), `i18n` (`t()`), `dom`, `format`, `theme` |
 
 ## Development
 

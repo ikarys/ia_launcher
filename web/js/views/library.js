@@ -1,13 +1,14 @@
-// Management view: the models folder (downloads, Hugging Face cache, files put by hand)
+// Models view: the models folder (downloads, Hugging Face cache, files put by hand)
 import { api } from "../api.js";
 import { installEngine } from "../components/engine-catalog.js";
 import { browse, hardwareLine, selectedVariants } from "../components/hf-browser.js";
 import { openModelForm } from "../components/model-form.js";
 import { $, esc } from "../dom.js";
 import { size } from "../format.js";
+import { t } from "../i18n.js";
 import { state } from "../state.js";
 
-const SOURCE = { hf_cache: "cache HF", hf: "Hugging Face", local: "local" };
+const COLUMNS = ["model", "quant", "version", "date", "size", "used_by"];
 let timer = null;
 
 export async function loadLibrary() {
@@ -23,27 +24,26 @@ function engineFor(name) {
   return (fits.find(([, e]) => e.installed) || fits[0] || [null])[0];
 }
 
-const downloadHtml = d => `
-  <div class="dl-row">
-    <div><b>${esc(d.repo)}</b> <span class="meta">${esc(d.files.join(", "))}</span></div>
-    ${d.state === "running" ? `
-      <div class="bar"><span style="width:${Math.min(100, d.done / d.total * 100)}%;background:var(--accent)"></span></div>
-      <div class="meta">${size(d.done)} / ${size(d.total)} · <button class="link" data-cancel="${d.id}">Annuler</button></div>`
+function downloadHtml(d) {
+  const status = d.state === "running" ? `
+    <div class="bar"><span style="width:${Math.min(100, d.done / d.total * 100)}%;background:var(--accent)"></span></div>
+    <div class="meta">${size(d.done)} / ${size(d.total)} · <button class="link" data-cancel="${d.id}">${esc(t("ui.dl.cancel"))}</button></div>`
     : `<div class="meta" style="color:${d.state === "done" ? "var(--ok)" : "var(--err)"}">${
-        { done: "Terminé", cancelled: "Annulé (le téléchargement reprendra là où il en était si tu le relances)" }[d.state] || esc(d.msg)}</div>`}
-  </div>`;
+        esc({ done: t("ui.dl.done"), cancelled: t("ui.dl.cancelled") }[d.state] || d.msg)}</div>`;
+  return `<div class="dl-row"><div><b>${esc(d.repo)}</b> <span class="meta">${esc(d.files.join(", "))}</span></div>${status}</div>`;
+}
 
 const usedHtml = u => u?.length ? `<span class="used">● ${esc(u.join(", "))}</span>` : "";
 const deleteHtml = (path, label, u) => path && !u?.length
-  ? `<button class="link" data-del="${esc(path)}" data-label="${esc(label)}" style="color:var(--err)">Supprimer</button>` : "";
+  ? `<button class="link" data-del="${esc(path)}" data-label="${esc(label)}" style="color:var(--err)">${esc(t("ui.lib.delete"))}</button>` : "";
 const useHtml = (x, task) => x.path && engineFor(x.name) && !x.used_by?.length
-  ? `<button class="link" data-use="${esc(x.path)}" data-task="${esc(task || "")}">Ajouter comme modèle</button>` : "";
+  ? `<button class="link" data-use="${esc(x.path)}" data-task="${esc(task || "")}">${esc(t("ui.lib.add_model"))}</button>` : "";
 
 function itemHtml(it) {
   const single = it.files.length === 1 && it.files[0].path === it.path;
   const version = [it.sha && `<code>${esc(it.sha)}</code>`, it.hf_date && `HF ${esc(it.hf_date)}`].filter(Boolean).join(" · ") || "–";
   const head = `<tr>
-    <td><b>${esc(it.repo || it.path)}</b> <span class="tag">${esc(SOURCE[it.source] || it.source)}</span>${
+    <td><b>${esc(it.repo || it.path)}</b> <span class="tag">${esc(t("ui.src." + it.source))}</span>${
       it.task ? ` <span class="tag">${esc(it.task)}</span>` : ""}${
       it.repo && it.source !== "hf_cache" ? `<div class="meta" style="margin:0">${esc(it.path)}</div>` : ""}</td>
     <td>${single ? esc(it.files[0].quant || "–") : ""}</td>
@@ -60,22 +60,22 @@ function itemHtml(it) {
 
 function render() {
   const lib = state.lib;
-  $("#libFree").textContent = `${lib.dir} · ${size(lib.free)} libres`;
+  $("#libFree").textContent = t("ui.lib.free", { dir: lib.dir, size: size(lib.free) });
   if (!$("#hwLine").textContent) $("#hwLine").textContent = hardwareLine(lib.hardware);
   $("#dls").innerHTML = lib.downloads.map(downloadHtml).join("");
-  $("#libTable").innerHTML = `<thead><tr><th>Modèle</th><th>Quant</th><th>Version</th><th>Date</th>
-    <th style="text-align:right">Taille</th><th>Utilisé par</th><th></th></tr></thead><tbody>${lib.items.map(itemHtml).join("")}</tbody>`;
+  const head = COLUMNS.map(c => `<th${c === "size" ? ' style="text-align:right"' : ""}>${esc(t("ui.col." + c))}</th>`).join("");
+  $("#libTable").innerHTML = `<thead><tr>${head}<th></th></tr></thead><tbody>${lib.items.map(itemHtml).join("")}</tbody>`;
 }
 
 async function downloadSelection(repo) {
   const sel = selectedVariants();
   if (!sel.length) return false;
   if (sel.every(i => i.dataset.verdict === "installed")) {
-    $("#libMsg").textContent = "Déjà installé : rien à télécharger.";
+    $("#libMsg").textContent = t("ui.dl.nothing");
     return false;
   }
-  const bad = sel.filter(i => ["no", "incompatible", "disk"].includes(i.dataset.verdict));
-  if (bad.length && !confirm("Cette sélection ne pourra pas tourner sur ta machine (voir l'explication). Télécharger quand même ?")) return false;
+  const unusable = sel.some(i => ["no", "incompatible", "disk"].includes(i.dataset.verdict));
+  if (unusable && !confirm(t("ui.dl.confirm_unusable"))) return false;
   await api("/api/hf/download", { repo, files: sel.flatMap(i => JSON.parse(i.dataset.files)) });
   $("#hfFiles").innerHTML = "";
   return true;
@@ -90,13 +90,13 @@ function addAsModel(path, task) {
 // -> true when the library changed (reload it)
 async function onClick(b) {
   const d = b.dataset;
-  if (d.install) return void installEngine(d.install);
+  if (d.install) return void installEngine(d.install, $("#libMsg"));
   if (d.browse) return void browse(d.browse);
   if (d.use) return void addAsModel(d.use, d.task);
   if (d.quick) await api("/api/hf/download", { repo: d.quick, files: JSON.parse(d.files) });
   else if (d.cancel) await api(`/api/hf/cancel/${d.cancel}`, {});
   else if (d.del) {
-    if (!confirm(`Supprimer définitivement ${d.label} du disque ?`)) return false;
+    if (!confirm(t("ui.lib.delete_confirm", { name: d.label }))) return false;
     await api("/api/library/delete", { path: d.del });
   } else if (b.id === "hfDownload") return downloadSelection(d.repo);
   else return false;

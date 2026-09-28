@@ -1,17 +1,16 @@
 // Hugging Face repository browser: variants with a "does it run here?" verdict, alternatives
 import { api } from "../api.js";
 import { $, esc } from "../dom.js";
-import { size } from "../format.js";
+import { count, size } from "../format.js";
+import { t } from "../i18n.js";
 import { state } from "../state.js";
 import { installButton } from "./engine-catalog.js";
 
-const VERDICT = { installed: "Déjà installé", gpu: "Tient sur le GPU", partial: "GPU + RAM (lent)", no: "Trop gros",
-  incompatible: "Incompatible", disk: "Disque plein", extra: "Optionnel" };
-
 export function hardwareLine(hw) {
-  return hw.gpu ? `Machine : ${hw.gpu.replace("NVIDIA GeForce ", "")} · ${size(hw.vram_mib * 2 ** 20)} VRAM `
-    + `(${size(hw.vram_usable_mib * 2 ** 20)} utilisables) · génération ${hw.cc} · RAM ${size(hw.ram_mib * 2 ** 20)} `
-    + `· ${hw.cpus} cœurs · disque ${size(hw.disk_free)} libres` : "Pas de GPU détecté";
+  if (!hw.gpu) return t("ui.hf.no_gpu");
+  return t("ui.hf.hardware", { gpu: hw.gpu.replace("NVIDIA GeForce ", ""), vram: size(hw.vram_mib * 2 ** 20),
+    usable: size(hw.vram_usable_mib * 2 ** 20), cc: hw.cc, ram: size(hw.ram_mib * 2 ** 20), cpus: hw.cpus,
+    disk: size(hw.disk_free) });
 }
 
 const variantHtml = v => `
@@ -19,16 +18,16 @@ const variantHtml = v => `
     <input type="checkbox" data-files="${esc(JSON.stringify(v.files))}" data-verdict="${v.verdict}" data-size="${v.size}">
     <span class="name">${esc(v.name)}</span>
     ${v.quant ? `<span class="tag">${esc(v.quant)}</span>` : ""}
-    <span class="verdict v-${v.verdict}">${VERDICT[v.verdict]}</span>
+    <span class="verdict v-${v.verdict}">${esc(t("ui.verdict." + v.verdict))}</span>
     <span class="meta" style="margin:0">${size(v.size)}</span>
     <span class="why">${esc(v.why)}${v.suggest ? ` ${installButton(v.suggest)}` : ""}</span>
   </label>`;
 
 const alternativeHtml = a => `<div class="row">
   <span><b>${esc(a.repo)}</b> · ${esc(a.name)} <span class="tag">${esc(a.quant || "?")}</span> ${size(a.size)}
-    <span class="meta" style="margin:0">· ${(a.downloads ?? 0).toLocaleString("fr-FR")} téléchargements</span></span>
-  <button class="link" data-browse="${esc(a.repo)}">Voir le dépôt</button>
-  <button class="link" data-quick="${esc(a.repo)}" data-files="${esc(JSON.stringify(a.files))}">Télécharger</button>
+    <span class="meta" style="margin:0">· ${esc(t("ui.hf.downloads", { n: count(a.downloads) }))}</span></span>
+  <button class="link" data-browse="${esc(a.repo)}">${esc(t("ui.hf.view"))}</button>
+  <button class="link" data-quick="${esc(a.repo)}" data-files="${esc(JSON.stringify(a.files))}">${esc(t("ui.hf.download"))}</button>
   <span class="why" style="padding-left:0">${esc(a.why)}</span></div>`;
 
 // what to say under the variants when nothing runs here
@@ -37,36 +36,36 @@ function adviceHtml(d) {
   const fits = d.variants.some(v => ["gpu", "installed"].includes(v.verdict));
   const allIncompatible = main.length && main.every(v => v.verdict === "incompatible");
   if (d.alternatives.length) {
-    const why = !main.length ? "" : allIncompatible ? "Aucune variante de ce dépôt n'est lançable ici (format)."
-      : "Aucune variante de ce dépôt ne tient sur ton GPU.";
-    return `<div class="alts"><b>${why} Versions de ${esc(d.base_searched)} qui tournent ici :</b>
+    const why = !main.length ? "" : t(allIncompatible ? "ui.hf.none_format" : "ui.hf.none_fits");
+    return `<div class="alts"><b>${esc(why)} ${esc(t("ui.hf.alternatives", { base: d.base_searched }))}</b>
       ${d.alternatives.map(alternativeHtml).join("")}</div>`;
   }
   if (fits || !main.length) return "";
   const smallest = main.reduce((a, v) => v.size < a.size ? v : a);
-  if (allIncompatible) return `<div class="alts"><b>Aucune variante utilisable avec les moteurs installés.</b> ${esc(smallest.why)}</div>`;
-  return `<div class="alts"><b>Rien ne tient sur ton GPU.</b> La plus petite variante (${esc(smallest.quant || smallest.name)},
-    ${size(smallest.size)}) : ${esc(smallest.why)} Aucune autre version quantifiée compatible trouvée sur Hugging Face.</div>`;
+  if (allIncompatible) return `<div class="alts"><b>${esc(t("ui.hf.none_usable"))}</b> ${esc(smallest.why)}</div>`;
+  return `<div class="alts"><b>${esc(t("ui.hf.nothing_fits"))}</b> ${esc(t("ui.hf.smallest",
+    { name: smallest.quant || smallest.name, size: size(smallest.size), why: smallest.why }))}</div>`;
 }
 
 function repoHtml(d) {
-  const task = d.task ? ` · tâche <span class="tag">${esc(d.task)}</span> → section ${
-    esc(state.kinds[d.kind] || "aucune (type à choisir à l'ajout)")}` : "";
+  const section = esc(d.kind && state.kinds[d.kind] ? t("ui.hf.section", { kind: state.kinds[d.kind] }) : t("ui.hf.no_section"));
+  const task = d.task ? ` · ${esc(t("ui.hf.task"))} <span class="tag">${esc(d.task)}</span> → ${section}` : "";
   const files = d.variants.length ? `<div class="hf-files">${d.variants.map(variantHtml).join("")}</div>
     <div class="row" style="margin:8px 0">
-      <button class="primary" id="hfDownload" data-repo="${esc(d.repo)}">Télécharger la sélection</button>
+      <button class="primary" id="hfDownload" data-repo="${esc(d.repo)}">${esc(t("ui.hf.download_selection"))}</button>
       <span class="meta" id="hfSel" style="margin:0"></span></div>`
-    : `<p class="meta">Aucun fichier de modèle (gguf, safetensors, ninfer) dans ce dépôt.</p>`;
+    : `<p class="meta">${esc(t("ui.hf.no_files"))}</p>`;
   return `
     <div class="meta" style="margin:0 0 6px">${esc(d.repo)} · commit <code>${esc(d.sha.slice(0, 7))}</code>
-      · mis à jour ${esc((d.modified || "").slice(0, 10))}${d.gated ? " · <b>accès protégé</b>" : ""}${task}</div>
+      · ${esc(t("ui.hf.updated", { date: (d.modified || "").slice(0, 10) }))}${
+      d.gated ? ` · <b>${esc(t("ui.hf.gated"))}</b>` : ""}${task}</div>
     ${files}${adviceHtml(d)}`;
 }
 
 export async function browse(repo) {
   $("#hfRepo").value = repo;
   $("#libMsg").textContent = "";
-  $("#hfFiles").innerHTML = `<span class="meta">Analyse du dépôt et de ta machine…</span>`;
+  $("#hfFiles").innerHTML = `<span class="meta">${esc(t("ui.hf.analysing"))}</span>`;
   try {
     const d = await api("/api/hf/info", { repo });
     $("#hwLine").textContent = hardwareLine(d.hardware);
@@ -80,7 +79,7 @@ export function bindHfBrowser() {
   $("#hfForm").addEventListener("submit", e => { e.preventDefault(); browse($("#hfRepo").value.trim()); });
   $("#hfFiles").addEventListener("change", () => {
     const sel = selectedVariants();
-    const total = sel.reduce((t, i) => t + +i.dataset.size, 0);
-    $("#hfSel").textContent = sel.length ? `${sel.length} variante(s) · ${size(total)}` : "";
+    const total = sel.reduce((sum, i) => sum + +i.dataset.size, 0);
+    $("#hfSel").textContent = sel.length ? t("ui.hf.selected", { n: sel.length, size: size(total) }) : "";
   });
 }

@@ -3,7 +3,8 @@ import { api } from "../api.js";
 import { bindCard, cardHtml, updateCard } from "../components/model-card.js";
 import { spark, track } from "../components/sparkline.js";
 import { $, esc } from "../dom.js";
-import { gb } from "../format.js";
+import { gb, time } from "../format.js";
+import { t } from "../i18n.js";
 import { seg, state } from "../state.js";
 
 let rendered = false;  // first render done: from then on, don't switch the card shown per kind
@@ -32,11 +33,14 @@ function showModel(kind, id) {
   for (const [mid, m] of Object.entries(state.models)) if (m.kind === kind) $("#card-" + mid).hidden = mid !== id;
 }
 
+const shortGpuName = name => name.replace("NVIDIA GeForce ", "");
+
 function renderSystem(st) {
   const g = st.gpu;
+  $("#host").textContent = t("ui.header.host", { gpu: g ? shortGpuName(g.name) : "CPU", dir: st.models_dir });
   if (g) {
-    $("#gpuName").textContent = "· " + g.name.replace("NVIDIA GeForce ", "");
-    $("#vramBig").innerHTML = `${gb(g.used)} <small>/ ${gb(g.total)} · libre ${gb(g.total - g.used)}</small>`;
+    $("#gpuName").textContent = "· " + shortGpuName(g.name);
+    $("#vramBig").innerHTML = `${gb(g.used)} <small>/ ${gb(g.total)} · ${esc(t("ui.sys.free", { size: gb(g.total - g.used) }))}</small>`;
     const segs = vramSegments(st);
     $("#vramBar").innerHTML = segs.map(([, v, c]) => `<span style="width:${v / g.total * 100}%;background:${c}"></span>`).join("");
     $("#vramLegend").innerHTML = segs.map(([n, v, c]) => `<span><i style="background:${c}"></i>${esc(n)} ${gb(v)}</span>`).join("");
@@ -45,19 +49,19 @@ function renderSystem(st) {
     $("#gpuMeta").innerHTML = [g.temp != null && `<span class="${g.temp >= 83 ? "crit" : g.temp >= 75 ? "hot" : ""}">${g.temp} °C</span>`,
       g.power != null && `${Math.round(g.power)} W`].filter(Boolean).join(" · ");
   } else {
-    $("#vramBig").textContent = "nvidia-smi indisponible";
+    $("#vramBig").textContent = t("ui.sys.no_gpu");
   }
   $("#ramBig").innerHTML = `${gb(st.ram.used_mib)} <small>/ ${gb(st.ram.total_mib)}</small>`;
   spark($("#ramSpark"), track("ram", st.ram.used_mib), st.ram.total_mib, "var(--seg-2)");
   $("#cpuBig").textContent = Math.round(st.cpu.pct) + " %";
   spark($("#cpuSpark"), track("cpu", st.cpu.pct), 100, "var(--ok)");
-  $("#cpuMeta").textContent = st.cpu.count + " cœurs logiques";
+  $("#cpuMeta").textContent = t("ui.sys.cores", { n: st.cpu.count });
 }
 
-// VRAM bar: display + WSL, then each model, then whatever else uses it
+// VRAM bar: system (display...), then each model, then whatever else uses it
 function vramSegments(st) {
   const g = st.gpu;
-  const segs = [["Windows + WSL", Math.min(g.baseline, g.used), "var(--seg-other)"]];
+  const segs = [[t("ui.sys.baseline"), Math.min(g.baseline, g.used), "var(--seg-other)"]];
   let rest = g.used - segs[0][1];
   for (const [id, s] of Object.entries(st.models)) {
     if (s.vram_mib > 0) {
@@ -66,7 +70,7 @@ function vramSegments(st) {
       rest -= v;
     }
   }
-  if (rest > 256) segs.push(["autre", rest, "var(--faint)"]);
+  if (rest > 256) segs.push([t("ui.sys.other"), rest, "var(--faint)"]);
   return segs;
 }
 
@@ -90,11 +94,11 @@ function render(st) {
 export async function poll() {
   try {
     const st = await api("/api/status");
-    $("#conn").textContent = "à jour " + new Date(st.time * 1000).toLocaleTimeString("fr-FR");
+    $("#conn").textContent = t("ui.conn.updated", { time: time(st.time) });
     $("#conn").classList.remove("bad");
     if (st.ready) render(st);
   } catch {
-    $("#conn").textContent = "launcher injoignable";
+    $("#conn").textContent = t("ui.conn.down");
     $("#conn").classList.add("bad");
   }
 }

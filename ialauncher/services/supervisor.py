@@ -7,6 +7,7 @@ is detected by its process names, and can be stopped too.
 import sys
 import threading
 import time
+from pathlib import Path
 
 import psutil
 
@@ -68,6 +69,7 @@ class Supervisor:
         vm = psutil.virtual_memory()
         self.snapshot = {
             "ready": True, "time": time.time(), "lan_ip": self.ip,
+            "models_dir": str(self.models_dir).replace(str(Path.home()), "~", 1),
             "gpu": gpu and {k: v for k, v in gpu.items() if k != "pids"} | {
                 "baseline": self.baseline_mib(), "baseline_measured": self.baseline is not None},
             "ram": {"used_mib": round((vm.total - vm.available) / 2**20), "total_mib": round(vm.total / 2**20)},

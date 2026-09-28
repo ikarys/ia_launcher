@@ -38,5 +38,10 @@ a.btn { font-size: 14px; font-weight: 600; border-radius: 8px; padding: 7px 16px
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .row input { flex: 1; min-width: 200px; }
 
-/* one page, several views: body.page-<view> shows its own */
-body.page-manage .home, body.page-manage .sys, body.page-home .manage { display: none; }
+.nav { display: flex; gap: 4px; }
+.nav a { font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 7px; }
+.nav a:hover { color: var(--text); }
+.nav a.on { color: var(--text); background: var(--panel-2); }
+
+/* one page, several views: body.page-<view> shows only its own sections */
+body:not(.page-home) .home, body:not(.page-manage) .manage, body:not(.page-settings) .settings { display: none; }

@@ -1,7 +1,10 @@
 {
   "llama.cpp": {
     "label": "llama.cpp",
-    "desc": "Serveur OpenAI pour les modèles GGUF (LLM, vision). Le plus polyvalent : toutes les quantifications, déchargement partiel GPU / RAM.",
+    "desc": {
+      "en": "OpenAI server for GGUF models (LLM, vision). The most versatile: every quantization, partial GPU / RAM offload.",
+      "fr": "Serveur OpenAI pour les modèles GGUF (LLM, vision). Le plus polyvalent : toutes les quantifications, déchargement partiel GPU / RAM."
+    },
     "url": "https://github.com/ggml-org/llama.cpp",
     "dir": "~/llm/llama.cpp",
     "script": "llama.cpp.sh",
@@ -21,17 +24,22 @@
       "build": ["cmake", "--build", "build", "--target", "llama-server"],
       "binary": "build/bin/llama-server",
       "params": {
-        "ctx": {"label": "Contexte (total, partagé entre sessions)", "default": "0"},
-        "parallel": {"label": "Sessions parallèles", "default": "1"},
-        "ngl": {"label": "Couches sur GPU (999 = toutes)", "default": "999"},
+        "ctx": {"label": {"en": "Context (total, shared by sessions)", "fr": "Contexte (total, partagé entre sessions)"},
+                "default": "0"},
+        "parallel": {"label": {"en": "Parallel sessions", "fr": "Sessions parallèles"}, "default": "1"},
+        "ngl": {"label": {"en": "GPU layers (999 = all)", "fr": "Couches sur GPU (999 = toutes)"}, "default": "999"},
         "flash_attn": {"label": "Flash attention", "default": "on",
-                       "values": [["on", "activée"], ["off", "désactivée"], ["auto", "auto"]]}
+                       "values": [["on", {"en": "on", "fr": "activée"}], ["off", {"en": "off", "fr": "désactivée"}],
+                                  ["auto", "auto"]]}
       }
     }
   },
   "vllm": {
     "label": "vLLM",
-    "desc": "Serveur OpenAI pour les modèles safetensors (dépôt Hugging Face complet), FP8 / NVFP4 / AWQ… Très rapide à plusieurs sessions, mais réserve la VRAM d'avance.",
+    "desc": {
+      "en": "OpenAI server for safetensors models (whole Hugging Face repository), FP8 / NVFP4 / AWQ… Very fast with several sessions, but reserves the VRAM up front.",
+      "fr": "Serveur OpenAI pour les modèles safetensors (dépôt Hugging Face complet), FP8 / NVFP4 / AWQ… Très rapide à plusieurs sessions, mais réserve la VRAM d'avance."
+    },
     "url": "https://github.com/vllm-project/vllm",
     "dir": "~/llm/vllm",
     "detect": ".venv/bin/vllm",
@@ -51,16 +59,19 @@
       "procs": ["vllm-serve.sh", "vllm"],
       "match_file": true,
       "params": {
-        "ctx": {"label": "Contexte max (tokens)", "default": "32768"},
-        "parallel": {"label": "Sessions parallèles max", "default": "8"},
-        "gpu_mem": {"label": "Part de la VRAM réservée", "default": "0.90",
+        "ctx": {"label": {"en": "Max context (tokens)", "fr": "Contexte max (tokens)"}, "default": "32768"},
+        "parallel": {"label": {"en": "Max parallel sessions", "fr": "Sessions parallèles max"}, "default": "8"},
+        "gpu_mem": {"label": {"en": "Share of the VRAM reserved", "fr": "Part de la VRAM réservée"}, "default": "0.90",
                     "values": [["0.90", "90 %"], ["0.80", "80 %"], ["0.70", "70 %"], ["0.95", "95 %"]]}
       }
     }
   },
   "ninfer": {
     "label": "Ninfer",
-    "desc": "Moteur CUDA spécialisé (fork co-l) pour les modèles .ninfer, NVFP4 + décodage spéculatif. Réservé aux GPU Blackwell (RTX 50xx).",
+    "desc": {
+      "en": "Specialised CUDA engine (co-l fork) for .ninfer models, NVFP4 + speculative decoding. Blackwell GPUs only (RTX 50xx).",
+      "fr": "Moteur CUDA spécialisé (fork co-l) pour les modèles .ninfer, NVFP4 + décodage spéculatif. Réservé aux GPU Blackwell (RTX 50xx)."
+    },
     "url": "https://github.com/co-l/ninfer",
     "dir": "~/llm/ninfer",
     "script": "ninfer.sh",
@@ -83,20 +94,25 @@
       "build": ["cmake", "--build", "build"],
       "binary": "build/apps/ninfer-serve",
       "params": {
-        "ctx": {"label": "Contexte max (tokens)", "default": "131072"},
-        "concurrency": {"label": "Sessions parallèles", "default": "4"},
-        "kv_dtype": {"label": "Cache KV", "default": "nvfp4",
+        "ctx": {"label": {"en": "Max context (tokens)", "fr": "Contexte max (tokens)"}, "default": "131072"},
+        "concurrency": {"label": {"en": "Parallel sessions", "fr": "Sessions parallèles"}, "default": "4"},
+        "kv_dtype": {"label": {"en": "KV cache", "fr": "Cache KV"}, "default": "nvfp4",
                      "values": [["nvfp4", "NVFP4"], ["fp8", "FP8"], ["bf16", "BF16"]]},
         "vision": {"label": "Vision", "default": "on", "map": {"on": "--vision", "off": ""},
-                   "values": [["on", "activée"], ["off", "désactivée (libère de la VRAM)"]]},
-        "spec": {"label": "Décodage spéculatif", "values": [["dflash2", "DFlash2"], ["mtp", "MTP"]]},
-        "draft": {"label": "Tokens de brouillon", "default": "7"}
+                   "values": [["on", {"en": "on", "fr": "activée"}],
+                              ["off", {"en": "off (frees VRAM)", "fr": "désactivée (libère de la VRAM)"}]]},
+        "spec": {"label": {"en": "Speculative decoding", "fr": "Décodage spéculatif"},
+                 "values": [["dflash2", "DFlash2"], ["mtp", "MTP"]]},
+        "draft": {"label": {"en": "Draft tokens", "fr": "Tokens de brouillon"}, "default": "7"}
       }
     }
   },
   "laya": {
     "label": "laya-serve",
-    "desc": "Serveur du modèle de décision Laya (choix typés, oui / non, scores) : télécharge lui-même ses checkpoints. Tourne très bien sur CPU.",
+    "desc": {
+      "en": "Server of the Laya decision model (typed choices, yes / no, scores): downloads its own checkpoints. Runs very well on CPU.",
+      "fr": "Serveur du modèle de décision Laya (choix typés, oui / non, scores) : télécharge lui-même ses checkpoints. Tourne très bien sur CPU."
+    },
     "url": "https://huggingface.co/convaiinnovations/laya",
     "dir": "~/llm/laya",
     "script": "laya.sh",
@@ -122,8 +138,9 @@
       "provides_repos": ["convaiinnovations/laya", "convaiinnovations/laya-multilingual",
                          "convaiinnovations/laya-typed-decisions"],
       "params": {
-        "device": {"label": "Calcul sur", "default": "cpu",
-                   "values": [["cpu", "CPU (0 VRAM)"], ["auto", "auto (GPU si assez de VRAM)"], ["cuda", "GPU"]]}
+        "device": {"label": {"en": "Runs on", "fr": "Calcul sur"}, "default": "cpu",
+                   "values": [["cpu", "CPU (0 VRAM)"], ["auto", {"en": "auto (GPU if enough VRAM)", "fr": "auto (GPU si assez de VRAM)"}],
+                              ["cuda", "GPU"]]}
       }
     }
   }

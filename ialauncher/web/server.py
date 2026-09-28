@@ -4,7 +4,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from ..errors import LaunchError
 from ..i18n import tr
-from . import routes, static
+from . import page, routes, static
 
 MAX_BODY = 1 << 20
 
@@ -46,9 +46,12 @@ def make_handler(app):
                 self._send(500, {"error": f"{type(e).__name__}: {e}"})
 
         def do_GET(self):
-            if self.path.startswith("/api/"):
+            path = self.path.split("?")[0]
+            if path.startswith("/api/"):
                 return self._dispatch("GET")
-            found = static.find(self.path.split("?")[0])
+            if path in page.VIEWS:
+                return self._send(200, page.render(app.settings), "text/html; charset=utf-8")
+            found = static.find(path)
             if not found:
                 return self._send(404, {"error": tr("http.not_found")})
             self._send(200, *found)

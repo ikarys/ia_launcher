@@ -103,6 +103,8 @@ ROUTES = [
     Route("POST", re.compile(r"/api/engines/install/([\w.-]+)"), lambda app, m, b: _install(app, m[1])),
     Route("POST", re.compile(r"/api/library/delete"), _do(lambda app, m, b: app.library.delete(str(b.get("path", ""))))),
     Route("POST", re.compile(r"/api/reload"), _do(lambda app, m, b: app.registry.reload_models())),
+    Route("GET", re.compile(r"/api/settings"), lambda app, m, b: app.settings.values),
+    Route("POST", re.compile(r"/api/settings"), _do(lambda app, m, b: app.settings.update(b))),
     Route("POST", re.compile(r"/api/(start|stop)/(\w+)"), _start_stop),
 ]
 

@@ -1,5 +1,5 @@
 /* Management view: sections, tables, Hugging Face browser, verdicts, model form */
-body.page-manage .lib:first-child { margin-top: 0; }
+.manage > .lib:first-child, .settings > .lib:first-child { margin-top: 0; }
 .lib { margin-top: 16px; display: flex; flex-direction: column; gap: 14px; }
 .lib-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .lib-head h3 { margin: 0; font-size: 12px; font-weight: 600; text-transform: uppercase;
