@@ -20,7 +20,6 @@ just install-service  # or: systemd service started at WSL boot
 The launcher venv (`venv-launcher`, dependency: `psutil`) is created on first run.
 Install Laya with `setup/install-laya.sh`.
 
-
 ## Configuration
 
 Models are described in `models.json` (local, not versioned), written by the
