@@ -1,5 +1,10 @@
 # IA Launcher
 
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
+![License MIT](https://img.shields.io/badge/license-MIT-green)
+![Platform Linux / WSL2](https://img.shields.io/badge/platform-Linux%20%7C%20WSL2-lightgrey)
+![GPU NVIDIA](https://img.shields.io/badge/gpu-NVIDIA-orange)
+
 A local web page to start and stop AI models on your own machine, and see what they use: VRAM, RAM, CPU.
 Think of a small, self-hosted LM Studio for Linux / WSL: models and inference engines are configuration,
 nothing in the code is specific to one model or one engine.
