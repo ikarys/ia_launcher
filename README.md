@@ -20,8 +20,6 @@ just install-service  # or: systemd service started at WSL boot
 The launcher venv (`venv-launcher`, dependency: `psutil`) is created on first run.
 Install Laya with `setup/install-laya.sh`.
 
-On Windows, `windows/ia-launcher.ps1` starts the launcher in WSL, opens the
-page, and blocks sleep while its window is open.
 
 ## Configuration
 
