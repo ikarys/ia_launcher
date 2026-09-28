@@ -5,7 +5,6 @@ import { bindHfBrowser } from "./components/hf-browser.js";
 import { bindModelForm } from "./components/model-form.js";
 import { on } from "./events.js";
 import { state } from "./state.js";
-import { bindThemePicker } from "./theme.js";
 import { buildCards, poll } from "./views/dashboard.js";
 import { bindLibrary, loadLibrary } from "./views/library.js";
 import { bindModelsTable, renderModelsTable } from "./views/models-table.js";
@@ -27,7 +26,6 @@ async function reloadModels(show) {
 
 on("reload", reloadModels);
 on("poll", poll);
-bindThemePicker();
 bindModelForm();
 bindModelsTable();
 bindEngineCatalog();

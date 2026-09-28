@@ -3,7 +3,7 @@ import { api } from "../api.js";
 import { bindCard, cardHtml, updateCard } from "../components/model-card.js";
 import { spark, track } from "../components/sparkline.js";
 import { $, esc } from "../dom.js";
-import { gb, time } from "../format.js";
+import { gb } from "../format.js";
 import { t } from "../i18n.js";
 import { seg, state } from "../state.js";
 
@@ -37,7 +37,6 @@ const shortGpuName = name => name.replace("NVIDIA GeForce ", "");
 
 function renderSystem(st) {
   const g = st.gpu;
-  $("#host").textContent = t("ui.header.host", { gpu: g ? shortGpuName(g.name) : "CPU", dir: st.models_dir });
   if (g) {
     $("#gpuName").textContent = "· " + shortGpuName(g.name);
     $("#vramBig").innerHTML = `${gb(g.used)} <small>/ ${gb(g.total)} · ${esc(t("ui.sys.free", { size: gb(g.total - g.used) }))}</small>`;
@@ -91,14 +90,13 @@ function render(st) {
   rendered = true;
 }
 
+// the header only says something when the launcher stops answering
 export async function poll() {
   try {
     const st = await api("/api/status");
-    $("#conn").textContent = t("ui.conn.updated", { time: time(st.time) });
-    $("#conn").classList.remove("bad");
+    $("#conn").textContent = "";
     if (st.ready) render(st);
   } catch {
     $("#conn").textContent = t("ui.conn.down");
-    $("#conn").classList.add("bad");
   }
 }

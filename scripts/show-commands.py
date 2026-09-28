@@ -10,7 +10,9 @@ from ialauncher.domain import engine as engine_rules  # noqa: E402
 from ialauncher.domain.model import clean_options  # noqa: E402
 from ialauncher.infra import gpu as gpu_probe  # noqa: E402
 from ialauncher.services.registry import Registry  # noqa: E402
+from ialauncher.services.settings import Settings  # noqa: E402
 
+models_dir = Settings(config.SETTINGS_FILE).models_dir()
 registry = Registry(config.ENGINES_FILE, config.MODELS_FILE, listen_port=config.LISTEN_PORT)
 gpu = gpu_probe.query()
 free = gpu["total"] - gpu["used"] if gpu else 0
@@ -20,7 +22,7 @@ for mid, m in registry.models.items():
     for label, opts in {"default": {}, **m["profiles"]}.items():
         argv, env, vram = engine_rules.build_command(
             registry.engines[m["engine_id"]], mid, m["config"], m["fixed"] | clean_options(m, opts),
-            vram_need=m["vram_mib"], free_vram=free, models_dir=config.MODELS_DIR)
+            vram_need=m["vram_mib"], free_vram=free, models_dir=models_dir)
         print(f"\n== {mid} [{label}]  vram={vram} MiB\n   $ {' '.join(argv)}")
         for k, v in env.items():
             print(f"     {k}={v}")

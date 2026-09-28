@@ -15,8 +15,9 @@ from .jobs import Jobs
 
 
 class Catalog:
-    def __init__(self, catalog_dir, registry, log_dir):
-        self.dir, self.registry, self.log_dir = catalog_dir, registry, log_dir
+    def __init__(self, catalog_dir, registry, log_dir, models_dir):
+        """models_dir: () -> the models folder (engines fetching their own weights put them there)."""
+        self.dir, self.registry, self.log_dir, self.models_dir = catalog_dir, registry, log_dir, models_dir
         self.entries = json.loads((catalog_dir / "catalog.json").read_text())
         self.jobs = Jobs()
 
@@ -54,7 +55,7 @@ class Catalog:
         c = self.entries[cid]
 
         def work(job):
-            env = {"INSTALL_DIR": expand(c["dir"]), "GPU_CC": str(gpu_cc or "")}
+            env = {"INSTALL_DIR": expand(c["dir"]), "MODELS_DIR": str(self.models_dir()), "GPU_CC": str(gpu_cc or "")}
             code = job.run(["bash", str(self.dir / c["script"])], env=env, cwd=self.dir)
             if code:
                 raise LaunchError(tr("eng.failed", code=code))

@@ -22,7 +22,12 @@ def _date(ts):
 
 class Library:
     def __init__(self, models_dir, registry, downloads):
-        self.dir, self.registry, self.downloads = models_dir, registry, downloads
+        """models_dir: () -> the models folder (a setting)."""
+        self.models_dir, self.registry, self.downloads = models_dir, registry, downloads
+
+    @property
+    def dir(self):
+        return self.models_dir()
 
     def has(self, rel):
         return (self.dir / rel).exists()

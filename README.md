@@ -7,7 +7,7 @@ Generic: models and inference engines are configuration, nothing model- or engin
 - Per-model VRAM tracking (inferred: `nvidia-smi` under WSL doesn't report per-process memory)
 - Add / edit models and download from Hugging Face from the page, with a "does it run here?" verdict
 - Engine catalog: install an inference engine from the page when a model needs one (like LM Studio's runtimes)
-- Settings page: UI language (English, French) and default theme (auto, light, dark, cyber, pixel, neo)
+- Settings page: UI language (English, French) and theme (auto, light, dark, cyber, pixel, neo)
 - Port conflict detection
 - Windows sleep blocked while a model is loaded (via WSL interop)
 
@@ -67,8 +67,8 @@ and every param. An argument or env variable that ends up empty is dropped (opti
 **`models.json`**: the models (engine, file, port, params, profiles), written by the page.
 Without it, the launcher starts with an empty list.
 
-**`settings.json`**: UI language and default theme, set from the Settings page (every browser uses them;
-the header's theme menu can override the theme in one browser).
+**`settings.json`**: UI language, theme and models folder (default `~/ia_models`: downloads, and the
+weights of engines that fetch their own), set from the Settings page (every browser uses them).
 
 Any text of `engines.json`, `models.json` or the catalog (labels, descriptions) can be a plain string or
 one per language: `{"en": "Parallel sessions", "fr": "Sessions parallèles"}`.
@@ -79,7 +79,7 @@ Copy `locales/en.json` to `locales/<code>.json` and translate the values: it app
 `just test` checks that every key used by the page and the server exists in every language.
 
 Environment variables: `IA_LAUNCHER_HOST` (default `0.0.0.0`), `IA_LAUNCHER_PORT` (default `8090`),
-`IA_LAUNCHER_MODELS_DIR` (default `~/ia_models`), `HF_TOKEN` (private Hugging Face models).
+`IA_LAUNCHER_MODELS_DIR` (models folder until one is set in Settings, default `~/ia_models`), `HF_TOKEN` (private Hugging Face models).
 
 ## Architecture
 

@@ -7,7 +7,6 @@ is detected by its process names, and can be stopped too.
 import sys
 import threading
 import time
-from pathlib import Path
 
 import psutil
 
@@ -22,7 +21,8 @@ from ..infra.files import tail
 
 class Supervisor:
     def __init__(self, registry, updates, *, gpu, keep_awake, log_dir, models_dir, default_baseline_mib):
-        """gpu: () -> GPU state or None; keep_awake: .set(bool) holds off the host's sleep."""
+        """gpu: () -> GPU state or None; keep_awake: .set(bool) holds off the host's sleep;
+        models_dir: () -> the models folder (a setting)."""
         self.registry, self.updates, self.gpu, self.keep_awake = registry, updates, gpu, keep_awake
         self.log_dir, self.models_dir, self.default_baseline_mib = log_dir, models_dir, default_baseline_mib
         self.lock = threading.RLock()
@@ -69,7 +69,6 @@ class Supervisor:
         vm = psutil.virtual_memory()
         self.snapshot = {
             "ready": True, "time": time.time(), "lan_ip": self.ip,
-            "models_dir": str(self.models_dir).replace(str(Path.home()), "~", 1),
             "gpu": gpu and {k: v for k, v in gpu.items() if k != "pids"} | {
                 "baseline": self.baseline_mib(), "baseline_measured": self.baseline is not None},
             "ram": {"used_mib": round((vm.total - vm.available) / 2**20), "total_mib": round(vm.total / 2**20)},
@@ -140,7 +139,7 @@ class Supervisor:
             free = gpu["total"] - gpu["used"] if gpu else 0
             argv, env, need = engine_rules.build_command(
                 self.registry.engines[m["engine_id"]], mid, m["config"], m["fixed"] | clean,
-                vram_need=m["vram_mib"], free_vram=free, models_dir=self.models_dir)
+                vram_need=m["vram_mib"], free_vram=free, models_dir=self.models_dir())
             if gpu and need and free < need:
                 self._refuse_no_vram(mid, free, need)
             header = f"$ {' '.join(argv)}\n  {' '.join(f'{k}={v}' for k, v in env.items())}\n\n"

@@ -8,7 +8,7 @@ HOME = Path.home()
 LISTEN_HOST = os.environ.get("IA_LAUNCHER_HOST", "0.0.0.0")
 LISTEN_PORT = int(os.environ.get("IA_LAUNCHER_PORT", "8090"))
 
-MODELS_DIR = Path(os.environ.get("IA_LAUNCHER_MODELS_DIR", HOME / "ia_models"))
+DEFAULT_MODELS_DIR = os.environ.get("IA_LAUNCHER_MODELS_DIR", "~/ia_models")  # changed in Settings
 LOG_DIR = ROOT / "logs"
 
 ENGINES_FILE = ROOT / "engines.json"

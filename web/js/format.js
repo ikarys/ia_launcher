@@ -14,8 +14,6 @@ export const decimal = (x, digits = 1) => dec(x.toFixed(digits));
 
 export const count = n => (n ?? 0).toLocaleString(t("locale"));
 
-export const time = seconds => new Date(seconds * 1000).toLocaleTimeString(t("locale"));
-
 export function dur(s) {
   if (s == null) return "–";
   if (s < 60) return s + " s";

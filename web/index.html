@@ -7,11 +7,9 @@
 <title>IA Launcher</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23367a6b'/><path d='M11 9l13 7-13 7z' fill='white'/></svg>">
 <script>
-// theme before the first paint (no flash): this browser's choice, else the launcher's default
+// the theme chosen in Settings, before the first paint (no flash)
 (() => {
-  const root = document.documentElement;
-  let theme = root.dataset.defaultTheme;
-  try { theme = localStorage.getItem("skin") || theme; } catch {}
+  const root = document.documentElement, theme = root.dataset.defaultTheme;
   if (theme === "light" || theme === "dark") root.dataset.theme = theme;
   else if (theme !== "auto") root.dataset.skin = theme;
 })();
@@ -32,14 +30,12 @@
 <div class="wrap">
   <header>
     <h1><a href="/" style="color:inherit;text-decoration:none">IA Launcher</a></h1>
-    <span class="sub" id="host"></span>
-    <span class="conn" id="conn">{{t:ui.conn.connecting}}</span>
+    <span class="conn" id="conn"></span>
     <nav class="nav">
       <a href="/" data-view="home">{{t:ui.nav.dashboard}}</a>
       <a href="/models" data-view="manage">{{t:ui.nav.models}}</a>
       <a href="/settings" data-view="settings">{{t:ui.nav.settings}}</a>
     </nav>
-    <select id="skin" title="{{t:ui.theme.title}}"></select>
   </header>
 
   <section class="panel sys home">
@@ -108,9 +104,14 @@
     <div class="opts">
       <label>{{t:ui.set.lang}}<select id="setLang"></select></label>
       <label>{{t:ui.set.theme}}<select id="setTheme"></select></label>
-      <span class="meta" id="setMsg" style="margin:0"></span>
     </div>
-    <div class="meta" style="margin:0">{{t:ui.set.theme_hint}}</div>
+    <form class="row" id="setModelsDir">
+      <label class="field">{{t:ui.set.models_dir}}<input name="models_dir" required></label>
+      <button>{{t:ui.form.save}}</button>
+    </form>
+    <div class="meta" style="margin:0">{{t:ui.set.models_dir_hint}}</div>
+    <div class="msg" id="setMsg"></div>
+    <div class="meta" style="margin:0">{{t:ui.set.hint}}</div>
   </section>
 
   <section class="panel lib" id="enginesSec">

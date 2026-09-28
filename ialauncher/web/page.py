@@ -13,7 +13,7 @@ _TEXT = re.compile(r"\{\{t:([\w.]+)\}\}")
 
 def render(settings):
     lang, theme = settings.values["lang"], settings.values["theme"]
-    boot = {"lang": lang, "theme": theme, "themes": THEMES,
+    boot = {"lang": lang, "theme": theme, "models_dir": settings.values["models_dir"], "themes": THEMES,
             "langs": {code: texts.get("lang.name", code) for code, texts in i18n.LOCALES.items()},
             "strings": i18n.LOCALES[i18n.DEFAULT_LANG] | i18n.LOCALES.get(lang, {})}
     page = (config.WEB_DIR / "index.html").read_text()

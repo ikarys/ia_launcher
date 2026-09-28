@@ -16,12 +16,16 @@ FREE_MARGIN = 5 * 2**30
 
 class Downloads:
     def __init__(self, models_dir, log_dir):
+        """models_dir: () -> the models folder (a setting)."""
         self.models_dir, self.log_dir = models_dir, log_dir
         self.jobs = Jobs()
         self.ids = itertools.count(1)
 
     def target_of(self, repo):
-        return self.models_dir / repo.replace("/", "--")
+        return self.models_dir() / repo.replace("/", "--")
+
+    def any_running(self):
+        return any(j.state == "running" for j in self.jobs.all())
 
     def busy(self, path):
         """A running download writes into path (or path is inside its folder)."""
@@ -33,7 +37,7 @@ class Downloads:
         sizes = {f["name"]: f["size"] for f in info["files"]}
         if not files or any(f not in sizes for f in files):
             raise LaunchError(tr("dl.pick_files"))
-        total, free = sum(sizes[f] for f in files), shutil.disk_usage(self.models_dir).free
+        total, free = sum(sizes[f] for f in files), shutil.disk_usage(self.models_dir()).free
         if total > free - FREE_MARGIN:
             raise LaunchError(tr("dl.no_space", size=gib(total / 2**20), free=gib(free / 2**20)))
         target = self.target_of(repo)

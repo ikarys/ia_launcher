@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared helpers for the engine install scripts (sourced, not run).
-# Environment given by the launcher: INSTALL_DIR (where the engine goes), GPU_CC (e.g. 12.0).
+# Environment given by the launcher: INSTALL_DIR (where the engine goes), MODELS_DIR (the models
+# folder, for engines fetching their own weights), GPU_CC (e.g. 12.0).
 # No sudo anywhere: the CUDA toolkit comes from NVIDIA's pip wheels, in a venv of its own.
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"

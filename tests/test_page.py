@@ -9,7 +9,7 @@ from ialauncher.web import page
 
 JS_KEY = re.compile(r"""\bt\(\s*["']([\w.]+)["']""")
 # keys built at run time: prefix + a value the page knows
-DYNAMIC = {"ui.theme.": ["auto", "light", "dark", "cyber", "pixel", "neo", "default"],
+DYNAMIC = {"ui.theme.": ["auto", "light", "dark", "cyber", "pixel", "neo"],
            "ui.state.": ["stopped", "starting", "ready", "stopping", "error"],
            "ui.vram.": ["live", "estimate", "load", "shared", "cpu"],
            "ui.verdict.": ["installed", "gpu", "partial", "no", "incompatible", "disk", "extra"],
@@ -21,7 +21,7 @@ DYNAMIC = {"ui.theme.": ["auto", "light", "dark", "cyber", "pixel", "neo", "defa
 
 class FakeSettings:
     def __init__(self, lang, theme="cyber"):
-        self.values = {"lang": lang, "theme": theme}
+        self.values = {"lang": lang, "theme": theme, "models_dir": "~/ia_models"}
 
 
 def page_literals():
