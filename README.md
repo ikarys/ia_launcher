@@ -5,9 +5,12 @@
 ![Platform Linux / WSL2](https://img.shields.io/badge/platform-Linux%20%7C%20WSL2-lightgrey)
 ![GPU NVIDIA](https://img.shields.io/badge/gpu-NVIDIA-orange)
 
-A local web page to start and stop AI models on your own machine, and see what they use: VRAM, RAM, CPU.
-Think of a small, self-hosted LM Studio for Linux / WSL: models and inference engines are configuration,
-nothing in the code is specific to one model or one engine.
+Run local AI models like home services. Paste a Hugging Face repo and it tells you which variants fit
+your GPU, installs the engine you're missing, and gives every model a card to start, stop and profile —
+with live VRAM, RAM, CPU and GPU load.
+
+Engine-agnostic by design: llama.cpp, vLLM, Ninfer and friends are configuration, not code.
+Linux / WSL2, NVIDIA.
 
 ![Dashboard](docs/images/dashboard.png)
 
