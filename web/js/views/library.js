@@ -34,8 +34,14 @@ function downloadHtml(d) {
 }
 
 const usedHtml = u => u?.length ? `<span class="used">● ${esc(u.join(", "))}</span>` : "";
-const deleteHtml = (path, label, u) => path && !u?.length
-  ? `<button class="link" data-del="${esc(path)}" data-label="${esc(label)}" style="color:var(--err)">${esc(t("ui.lib.delete"))}</button>` : "";
+// files used by a model can't be deleted: the button says why instead of disappearing
+function deleteHtml(path, label, usedBy) {
+  if (!path) return "";
+  if (usedBy?.length) {
+    return `<button class="link" disabled title="${esc(t("ui.lib.delete_blocked", { models: usedBy.join(", ") }))}">${esc(t("ui.lib.delete"))}</button>`;
+  }
+  return `<button class="link" data-del="${esc(path)}" data-label="${esc(label)}" style="color:var(--err)">${esc(t("ui.lib.delete"))}</button>`;
+}
 const useHtml = (x, task) => x.path && engineFor(x.name) && !x.used_by?.length
   ? `<button class="link" data-use="${esc(x.path)}" data-task="${esc(task || "")}">${esc(t("ui.lib.add_model"))}</button>` : "";
 

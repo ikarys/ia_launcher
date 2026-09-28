@@ -42,6 +42,17 @@ dialog h2 { margin: 0 0 12px; font-size: 18px; }
 .form .wide { grid-column: 1 / -1; }
 .form .hint { font-size: 11px; color: var(--faint); }
 
+#folderDlg { overflow-x: hidden; }
+.folder-path { margin: 8px 0; }
+.folder-path code { word-break: break-all; }
+.folders { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow: hidden auto;
+  border: 1px solid var(--line); border-radius: 8px; padding: 4px; }
+.folders button { text-align: left; font-weight: 400; border: none; background: none; padding: 5px 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.folders button:hover { background: var(--panel-2); }
+/* paths keep their exact case, whatever the theme does to buttons */
+#folderDlg [data-path] { text-transform: none; letter-spacing: normal; }
+
 @media (max-width: 820px) {
   .form { grid-template-columns: 1fr; }
 }

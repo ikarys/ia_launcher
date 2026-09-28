@@ -1,6 +1,7 @@
 """HTTP transport: JSON in / out, errors -> status codes, the page, same-origin POSTs only."""
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qsl, urlsplit
 
 from ..errors import LaunchError
 from ..i18n import tr
@@ -32,11 +33,12 @@ def make_handler(app):
             return json.loads(self.rfile.read(n) or b"{}")
 
         def _dispatch(self, method):
-            handler, match = routes.match(method, self.path)
+            url = urlsplit(self.path)
+            handler, match = routes.match(method, url.path)
             if not handler:
                 return self._send(404, {"error": tr("http.not_found")})
             try:
-                body = self._body() if method == "POST" else {}
+                body = self._body() if method == "POST" else dict(parse_qsl(url.query))
                 self._send(200, handler(app, match, body))
             except routes.NotFound:
                 self._send(404, {"error": tr("http.not_found")})
@@ -46,7 +48,7 @@ def make_handler(app):
                 self._send(500, {"error": f"{type(e).__name__}: {e}"})
 
         def do_GET(self):
-            path = self.path.split("?")[0]
+            path = urlsplit(self.path).path
             if path.startswith("/api/"):
                 return self._dispatch("GET")
             if path in page.VIEWS:

@@ -107,6 +107,7 @@
     </div>
     <form class="row" id="setModelsDir">
       <label class="field">{{t:ui.set.models_dir}}<input name="models_dir" required></label>
+      <button type="button" id="setBrowse">{{t:ui.set.browse}}</button>
       <button>{{t:ui.form.save}}</button>
     </form>
     <div class="meta" style="margin:0">{{t:ui.set.models_dir_hint}}</div>
@@ -149,6 +150,20 @@
       <button type="button" class="link" id="modelDelete" style="margin-left:auto;color:var(--err)">{{t:ui.form.delete}}</button>
     </div>
   </form>
+</dialog>
+<dialog id="folderDlg">
+  <h2>{{t:ui.folder.title}}</h2>
+  <div class="row" id="folderShortcuts"></div>
+  <div class="row folder-path">
+    <button type="button" class="link" id="folderUp">↑ {{t:ui.folder.up}}</button>
+    <code id="folderPath"></code>
+  </div>
+  <div class="folders" id="folderList"></div>
+  <p class="msg" id="folderMsg"></p>
+  <div class="actions" style="margin-top:14px">
+    <button type="button" class="primary" id="folderChoose">{{t:ui.folder.choose}}</button>
+    <button type="button" class="link" id="folderCancel">{{t:ui.form.cancel}}</button>
+  </div>
 </dialog>
 <datalist id="taskList"></datalist>
 <datalist id="fileList"></datalist>

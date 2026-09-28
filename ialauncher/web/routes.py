@@ -1,8 +1,10 @@
-"""URL -> service call. A handler gets (app, match, body) and returns the JSON payload."""
+"""URL -> service call. A handler gets (app, match, body) and returns the JSON payload
+(body: the JSON of a POST, the query parameters of a GET)."""
 import re
 from dataclasses import dataclass
 from typing import Callable
 
+from ..services import folders
 from . import presenters
 
 OK = {"ok": True}
@@ -104,6 +106,7 @@ ROUTES = [
     Route("POST", re.compile(r"/api/library/delete"), _do(lambda app, m, b: app.library.delete(str(b.get("path", ""))))),
     Route("POST", re.compile(r"/api/reload"), _do(lambda app, m, b: app.registry.reload_models())),
     Route("GET", re.compile(r"/api/settings"), lambda app, m, b: app.settings.values),
+    Route("GET", re.compile(r"/api/folders"), lambda app, m, b: folders.browse(b.get("path"))),
     Route("POST", re.compile(r"/api/settings"), _do(lambda app, m, b: app.settings.update(b))),
     Route("POST", re.compile(r"/api/(start|stop)/(\w+)"), _start_stop),
 ]
