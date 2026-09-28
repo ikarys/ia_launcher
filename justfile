@@ -4,6 +4,10 @@ default: run
 run:
     ./run.sh
 
+# Tests (pytest, dans venv-launcher : uv pip install -r requirements-dev.txt)
+test:
+    venv-launcher/bin/python -m pytest -q
+
 # Lance le launcher au boot de la WSL (service systemd)
 install-service:
     sudo rm -f /etc/systemd/system/ia-launcher.service  # old install = symlink to the template

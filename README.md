@@ -66,12 +66,34 @@ and every param. An argument or env variable that ends up empty is dropped (opti
 **`models.json`**: the models (engine, file, port, params, profiles), written by the page.
 Without it, the launcher starts with an empty list.
 
-Environment variables: `IA_LAUNCHER_HOST` (default `0.0.0.0`),
-`IA_LAUNCHER_PORT` (default `8090`), `HF_TOKEN` (private Hugging Face models).
+**`settings.json`**: UI language (`en`, `fr`: one file per language in `locales/`) and default theme.
 
-## Tools
+Environment variables: `IA_LAUNCHER_HOST` (default `0.0.0.0`), `IA_LAUNCHER_PORT` (default `8090`),
+`IA_LAUNCHER_MODELS_DIR` (default `~/ia_models`), `HF_TOKEN` (private Hugging Face models).
 
-- `setup/test-engines.py`: print the command each model would run, and the catalog state (starts nothing)
-- `setup/test-catalog.py`: validate the catalog's engine blocks and print their commands
-- `setup/test-hf-check.py org/repo…`: print the launcher's verdicts for Hugging Face repos
-- `setup/fix-venv-paths.sh /old/path`: repair the venvs after moving this folder
+## Architecture
+
+The server is the `ialauncher` package (standard library + `psutil` + `huggingface_hub`), in layers whose
+dependencies point inwards:
+
+| Layer | Role |
+|---|---|
+| `web/` | HTTP: route table (URL → service call), presenters (JSON for the page), server (transport, errors) |
+| `services/` | use cases: `supervisor` (start / stop / measure), `registry` (engines.json + models.json), `model_editor`, `library`, `downloads`, `catalog`, `updates`, `hub` (Hugging Face verdicts), `settings`, `jobs` (background jobs) |
+| `domain/` | pure rules, no I/O: engine command building, model validation, compatibility verdicts, card state / VRAM |
+| `infra/` | system access: GPU (`nvidia-smi`), processes, network, files, Hugging Face, git, Windows host |
+
+`app.py` wires the services together (composition root), `__main__.py` starts the server.
+Texts shown to the user come from `locales/<lang>.json` (same keys for the page and the server).
+
+## Development
+
+```sh
+uv pip install --python venv-launcher/bin/python -r requirements-dev.txt
+just test             # pytest: domain rules, jobs, catalog, locales
+```
+
+Tools:
+- `scripts/show-commands.py`: print the command each model would run, per profile (starts nothing)
+- `scripts/check-hf.py org/repo…`: print the launcher's verdicts for Hugging Face repositories
+- `scripts/fix-venv-paths.sh /old/path`: repair the venvs after moving this folder

@@ -7,4 +7,4 @@ cd "$(dirname "$0")"
 export PATH="$HOME/.local/bin:$PATH"
 [ -x venv-launcher/bin/python ] || uv venv -q --python 3.12 venv-launcher
 uv pip install -q --python venv-launcher/bin/python -r requirements.txt
-exec venv-launcher/bin/python launcher.py
+exec venv-launcher/bin/python -m ialauncher

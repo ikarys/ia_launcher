@@ -816,6 +816,8 @@ function engineFor(name) {
   return (fits.find(([, e]) => e.installed) || fits[0] || [null])[0];
 }
 
+const SOURCE = { hf_cache: "cache HF", hf: "Hugging Face", local: "local" };
+
 function renderLib() {
   $("#libFree").textContent = `${LIB.dir} · ${size(LIB.free)} libres`;
   if (!$("#hwLine").textContent) $("#hwLine").textContent = hwText(LIB.hardware);
@@ -839,7 +841,7 @@ function renderLib() {
     const single = it.files.length === 1 && it.files[0].path === it.path;
     const version = [it.sha && `<code>${esc(it.sha)}</code>`, it.hf_date && `HF ${esc(it.hf_date)}`].filter(Boolean).join(" · ") || "–";
     const head = `<tr>
-      <td><b>${esc(it.repo || it.path)}</b> <span class="tag">${esc(it.source)}</span>${it.task ? ` <span class="tag">${esc(it.task)}</span>` : ""}${it.repo && it.source !== "cache HF" ? `<div class="meta" style="margin:0">${esc(it.path)}</div>` : ""}</td>
+      <td><b>${esc(it.repo || it.path)}</b> <span class="tag">${esc(SOURCE[it.source] || it.source)}</span>${it.task ? ` <span class="tag">${esc(it.task)}</span>` : ""}${it.repo && it.source !== "hf_cache" ? `<div class="meta" style="margin:0">${esc(it.path)}</div>` : ""}</td>
       <td>${single ? esc(it.files[0].quant || "–") : ""}</td>
       <td>${version}</td>
       <td class="num">${esc(single ? it.files[0].downloaded || it.date : it.date)}</td>

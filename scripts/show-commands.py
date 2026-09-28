@@ -1,0 +1,26 @@
+"""Print, for every model of models.json and each of its profiles, the command and env the
+launcher would run (nothing is started).
+    venv-launcher/bin/python scripts/show-commands.py"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from ialauncher import config  # noqa: E402
+from ialauncher.domain import engine as engine_rules  # noqa: E402
+from ialauncher.domain.model import clean_options  # noqa: E402
+from ialauncher.infra import gpu as gpu_probe  # noqa: E402
+from ialauncher.services.registry import Registry  # noqa: E402
+
+registry = Registry(config.ENGINES_FILE, config.MODELS_FILE, listen_port=config.LISTEN_PORT)
+gpu = gpu_probe.query()
+free = gpu["total"] - gpu["used"] if gpu else 0
+for eid in registry.engines:
+    print(f"engine {eid}: installed={registry.installed(eid)}")
+for mid, m in registry.models.items():
+    for label, opts in {"default": {}, **m["profiles"]}.items():
+        argv, env, vram = engine_rules.build_command(
+            registry.engines[m["engine_id"]], mid, m["config"], m["fixed"] | clean_options(m, opts),
+            vram_need=m["vram_mib"], free_vram=free, models_dir=config.MODELS_DIR)
+        print(f"\n== {mid} [{label}]  vram={vram} MiB\n   $ {' '.join(argv)}")
+        for k, v in env.items():
+            print(f"     {k}={v}")

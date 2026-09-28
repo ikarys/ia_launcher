@@ -4,3 +4,5 @@ logs/
 *.tmp
 models.json
 engines.json
+settings.json
+.pytest_cache/
