@@ -16,8 +16,8 @@ need() {
   local missing=()
   for c in "$@"; do command -v "$c" >/dev/null || missing+=("$c"); done
   if [ ${#missing[@]} -gt 0 ]; then
-    echo "Outils manquants : ${missing[*]}"
-    echo "A installer dans la WSL : sudo apt install ${missing[*]/g++/build-essential}"
+    echo "Missing tools: ${missing[*]}"
+    echo "Install them with: sudo apt install ${missing[*]/g++/build-essential}"
     exit 1
   fi
 }
@@ -33,7 +33,7 @@ cuda_arch() {
 # CUDA toolkit (nvcc, headers, cudart, cuBLAS) from pip wheels; sets CUDA_ROOT and puts nvcc in PATH.
 # CMake's FindCUDAToolkit wants unversioned .so names and a libcuda stub: added as links.
 cuda_toolkit() {
-  step "Toolkit CUDA $CUDA_VERSION (pip, $CUDA_VENV)"
+  step "CUDA toolkit $CUDA_VERSION (pip, $CUDA_VENV)"
   [ -x "$CUDA_VENV/bin/python" ] || uv venv -q --python 3.12 "$CUDA_VENV"
   uv pip install -q --python "$CUDA_VENV/bin/python" \
     "nvidia-cuda-nvcc==$CUDA_VERSION.*" "nvidia-cuda-runtime==$CUDA_VERSION.*" "nvidia-cuda-crt==$CUDA_VERSION.*" \
@@ -55,10 +55,10 @@ cuda_toolkit() {
 # git_checkout url dir : clone, or fast-forward an existing clone (local changes are kept: pull stops)
 git_checkout() {
   if [ -d "$2/.git" ]; then
-    step "Mise a jour de $2"
+    step "Updating $2"
     git -C "$2" pull --ff-only
   else
-    step "Clone de $1"
+    step "Cloning $1"
     git clone --depth 1 "$1" "$2"
   fi
 }

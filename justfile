@@ -1,14 +1,16 @@
 default: run
 
-# Demarre l'IA Launcher : http://0.0.0.0:8090 (joignable depuis le LAN)
+# Run in the foreground: http://0.0.0.0:8090 (reachable from the LAN)
 run:
     ./run.sh
 
-# Tests (pytest, dans venv-launcher : uv pip install -r requirements-dev.txt)
+# Run the tests (installs the dev requirements in venv-launcher first)
 test:
+    [ -x venv-launcher/bin/python ] || uv venv -q --python 3.12 venv-launcher
+    uv pip install -q --python venv-launcher/bin/python -r requirements-dev.txt
     venv-launcher/bin/python -m pytest -q
 
-# Lance le launcher au boot de la WSL (service systemd)
+# Start the launcher at boot (systemd service)
 install-service:
     sudo rm -f /etc/systemd/system/ia-launcher.service  # old install = symlink to the template
     sed "s|@USER@|$USER|; s|@DIR@|$PWD|" ia-launcher.service | sudo tee /etc/systemd/system/ia-launcher.service >/dev/null
@@ -24,6 +26,6 @@ start:
 stop:
     sudo systemctl stop ia-launcher
 
-# Apres une modif du code (arrete aussi les modeles lances)
+# After a code change (also stops the models it started)
 restart:
     sudo systemctl restart ia-launcher

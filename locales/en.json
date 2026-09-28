@@ -23,6 +23,10 @@
   "ui.sys.free": "free {size}",
   "ui.sys.baseline": "System",
   "ui.sys.other": "other",
+  "ui.home.empty_title": "No model yet",
+  "ui.home.empty_text": "Add a model from Hugging Face or from a file of the models folder. If it needs an inference engine you don't have, the launcher suggests one to install from Settings.",
+  "ui.home.empty_models": "Add a model",
+  "ui.home.empty_engines": "Inference engines",
   "ui.sys.no_gpu": "nvidia-smi unavailable",
   "ui.sys.cores": "{n} logical cores",
 
@@ -189,7 +193,6 @@
   "kind.image": "Image",
   "kind.video": "Video",
 
-  "cfg.engines_missing": "engines.json not found: copy engines.example.json and adapt it.",
   "cfg.engines_prefix": "engines.json: {id}: {msg}",
   "cfg.engine_id": "identifier: letters, digits, . _ - only",
   "cfg.label_missing": "label missing",

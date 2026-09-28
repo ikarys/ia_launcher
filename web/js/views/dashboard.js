@@ -12,6 +12,10 @@ let rendered = false;  // first render done: from then on, don't switch the card
 export function buildCards(show) {
   const byKind = {};
   for (const [id, m] of Object.entries(state.models)) (byKind[m.kind ??= id] ??= []).push(id);
+  if (!Object.keys(byKind).length) {
+    $("#cards").innerHTML = emptyHtml();
+    return;
+  }
   $("#cards").innerHTML = Object.entries(byKind).map(([kind, ids]) => `
     <div class="kind">
       <div class="kind-head">
@@ -27,6 +31,17 @@ export function buildCards(show) {
   rendered = !!show;
   if (show && state.models[show]) showModel(state.models[show].kind, show);
 }
+
+// first run: no model yet, say where to start
+const emptyHtml = () => `
+  <div class="panel empty-home">
+    <h2>${esc(t("ui.home.empty_title"))}</h2>
+    <p>${esc(t("ui.home.empty_text"))}</p>
+    <div class="row">
+      <a class="btn" href="/models">${esc(t("ui.home.empty_models"))}</a>
+      <a class="btn" href="/settings">${esc(t("ui.home.empty_engines"))}</a>
+    </div>
+  </div>`;
 
 function showModel(kind, id) {
   $(`[data-kind="${kind}"]`).value = id;

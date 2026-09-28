@@ -13,6 +13,8 @@
 .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 
 .cards { display: grid; grid-template-columns: 1fr; gap: 24px; }
+.empty-home h2 { margin: 0 0 6px; font-size: 18px; }
+.empty-home p { margin: 0 0 14px; color: var(--muted); max-width: 70ch; }
 .card { display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden;
   border-left: 4px solid var(--c, var(--accent)); transition: box-shadow .4s; }
 .card.ready { box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent), 0 6px 24px -10px var(--c); }

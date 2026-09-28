@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Demarre l'IA Launcher en avant-plan : http://0.0.0.0:8090 (joignable depuis le LAN)
-# (cree son venv au premier lancement, puis le garde a jour avec requirements.txt).
-# Ctrl+C arrete le launcher ET les modeles qu'il a lances.
+# Runs IA Launcher in the foreground: http://0.0.0.0:8090 (reachable from the LAN).
+# Creates its venv on first run, then keeps it in sync with requirements.txt.
+# Ctrl+C stops the launcher AND the models it started.
 set -euo pipefail
 cd "$(dirname "$0")"
 export PATH="$HOME/.local/bin:$PATH"

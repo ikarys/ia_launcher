@@ -11,9 +11,11 @@ LISTEN_PORT = int(os.environ.get("IA_LAUNCHER_PORT", "8090"))
 DEFAULT_MODELS_DIR = os.environ.get("IA_LAUNCHER_MODELS_DIR", "~/ia_models")  # changed in Settings
 LOG_DIR = ROOT / "logs"
 
-ENGINES_FILE = ROOT / "engines.json"
-MODELS_FILE = ROOT / "models.json"
-SETTINGS_FILE = ROOT / "settings.json"
+# engines.json, models.json, settings.json: local, never versioned
+CONFIG_DIR = Path(os.environ.get("IA_LAUNCHER_CONFIG_DIR", ROOT)).expanduser()
+ENGINES_FILE = CONFIG_DIR / "engines.json"
+MODELS_FILE = CONFIG_DIR / "models.json"
+SETTINGS_FILE = CONFIG_DIR / "settings.json"
 LOCALES_DIR = ROOT / "locales"
 CATALOG_DIR = ROOT / "catalog"
 WEB_DIR = ROOT / "web"  # the page: index.html, css/, js/

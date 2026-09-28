@@ -6,10 +6,10 @@ cuda_toolkit
 git_checkout https://github.com/ggml-org/llama.cpp "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 ARCH="$(cuda_arch)"
-step "Configuration (CUDA, sm_$ARCH)"
+step "Configuring (CUDA, sm_$ARCH)"
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DLLAMA_CURL=OFF \
   -DCUDAToolkit_ROOT="$CUDA_ROOT" -DCMAKE_CUDA_COMPILER="$CUDA_ROOT/bin/nvcc" \
   -DCMAKE_CUDA_ARCHITECTURES="$ARCH"
-step "Compilation de llama-server (plusieurs minutes)"
+step "Building llama-server (several minutes)"
 nice -n 10 cmake --build build --target llama-server
 build/bin/llama-server --version

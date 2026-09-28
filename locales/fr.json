@@ -23,6 +23,10 @@
   "ui.sys.free": "libre {size}",
   "ui.sys.baseline": "Système",
   "ui.sys.other": "autre",
+  "ui.home.empty_title": "Aucun modèle pour l'instant",
+  "ui.home.empty_text": "Ajoute un modèle depuis Hugging Face ou depuis un fichier du dossier des modèles. S'il lui faut un moteur d'inférence absent, le launcher en propose un à installer depuis les Réglages.",
+  "ui.home.empty_models": "Ajouter un modèle",
+  "ui.home.empty_engines": "Moteurs d'inférence",
   "ui.sys.no_gpu": "nvidia-smi indisponible",
   "ui.sys.cores": "{n} cœurs logiques",
 
@@ -189,7 +193,6 @@
   "kind.image": "Image",
   "kind.video": "Vidéo",
 
-  "cfg.engines_missing": "engines.json introuvable : copie engines.example.json et adapte-le.",
   "cfg.engines_prefix": "engines.json : {id} : {msg}",
   "cfg.engine_id": "identifiant : lettres, chiffres, . _ - uniquement",
   "cfg.label_missing": "label manquant",

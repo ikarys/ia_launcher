@@ -6,8 +6,6 @@ from pathlib import Path
 
 from ..domain import engine as engine_rules
 from ..domain import model as model_rules
-from ..errors import LaunchError
-from ..i18n import tr
 from ..infra.engine_files import is_installed
 from ..infra.files import compact_json, read_json, write_atomic
 
@@ -38,9 +36,7 @@ class Registry:
 
     # -- engines
     def reload_engines(self):
-        raw = read_json(self.engines_file, None)
-        if raw is None:
-            raise LaunchError(tr("cfg.engines_missing"))
+        raw = read_json(self.engines_file, {})  # none yet: install one from the catalog
         for eid, e in raw.items():
             engine_rules.validate(eid, e)
         with self.lock:

@@ -1,120 +1,66 @@
 # IA Launcher
 
-Local web page to start / stop local AI models under WSL, and see their VRAM / RAM / CPU usage.
-Generic: models and inference engines are configuration, nothing model- or engine-specific in the code.
+A local web page to start and stop AI models on your own machine, and see what they use: VRAM, RAM, CPU.
+Think of a small, self-hosted LM Studio for Linux / WSL: models and inference engines are configuration,
+nothing in the code is specific to one model or one engine.
 
-- Start / stop models, with profiles (context, sessions, vision, device…)
-- Per-model VRAM tracking (inferred: `nvidia-smi` under WSL doesn't report per-process memory)
-- Add / edit models and download from Hugging Face from the page, with a "does it run here?" verdict
-- Engine catalog: install an inference engine from the page when a model needs one (like LM Studio's runtimes)
-- Settings page: UI language (English, French) and theme (auto, light, dark, cyber, pixel, neo)
-- Port conflict detection
-- Windows sleep blocked while a model is loaded (via WSL interop)
+![Dashboard](docs/images/dashboard.png)
+
+## Features
+
+- **Start / stop models** with profiles (context size, parallel sessions, vision, CPU or GPU…), from any
+  browser on your LAN
+- **Live usage**: VRAM per model (inferred, since `nvidia-smi` under WSL doesn't report per-process
+  memory), RAM, CPU, GPU load and temperature
+- **Hugging Face browser**: paste a repository and get a "does it run here?" verdict for every variant,
+  based on your GPU, your installed engines and free disk, then download what fits
+- **Engine catalog**: install llama.cpp, vLLM and others from the page when a model needs one, with no
+  sudo (the CUDA toolkit comes from NVIDIA's pip wheels)
+- **Library**: every model file of your models folder, which model uses it, and cleanup
+- **Settings**: UI language (English, French), theme (auto, light, dark, cyber, pixel, neo), models folder
+- Port conflict detection; the models the launcher started stop with it
+- Under WSL, Windows doesn't go to sleep while a model is loaded
+
+| Models | Settings |
+|---|---|
+| ![Models](docs/images/models.png) | ![Settings](docs/images/settings.png) |
+
+## Requirements
+
+- Linux or WSL2 (Ubuntu tested), with systemd for the optional boot service
+- An NVIDIA GPU with its driver (`nvidia-smi`). The page still works without one, but most engines need it
+- [uv](https://github.com/astral-sh/uv) (Python and the venvs) and [just](https://github.com/casey/just)
+  (the commands below)
+- To build engines from the catalog: `sudo apt install git cmake ninja-build build-essential`
 
 ## Getting started
 
-Requirements: WSL (Ubuntu), [uv](https://github.com/astral-sh/uv), [just](https://github.com/casey/just), NVIDIA GPU.
-
 ```sh
-cp engines.example.json engines.json   # then describe your inference engines
-just run              # http://0.0.0.0:8090 (reachable from the LAN)
-just install-service  # or: systemd service started at WSL boot
+git clone https://github.com/ikarys/ia_launcher.git
+cd ia_launcher
+just run              # http://localhost:8090, also reachable from the LAN
 ```
 
-The launcher venv (`venv-launcher`, see `requirements.txt`) is created and kept up to date by `run.sh`.
-Inference engines live outside this project, in `~/llm/<engine>`: install them from the page (engine catalog).
+`run.sh` creates the launcher's venv on the first run and keeps it in sync with `requirements.txt`.
+On first start there is no model and no engine yet:
 
-## Engine catalog
+1. **Settings → Inference engines**: install an engine (llama.cpp is the most versatile)
+2. **Models → Download from Hugging Face**: paste a repository, pick a variant that fits, download it
+3. **Library → Add as a model**, then start it from the **Dashboard**
 
-`catalog/catalog.json` lists known engines (llama.cpp, vLLM, Ninfer, laya-serve): what they run, disk / time
-estimates, minimum GPU generation, and the block they add to `engines.json`. Each has an idempotent install
-script `catalog/<engine>.sh` (running it again updates / reconfigures). The Settings page's "Inference engines"
-section installs them in the background; the Hugging Face verdicts suggest the missing engine.
-
-No sudo: `catalog/lib.sh` builds against a CUDA toolkit made of NVIDIA's pip wheels (nvcc, cudart, cuBLAS)
-in `~/llm/cuda-<version>/.venv`, shared by every engine build. System tools needed for builds:
-`git cmake ninja-build build-essential`.
-
-The page only picks a catalog id: scripts come from this repository, never from the page. An engine id
-already in `engines.json` is left untouched.
-
-## Configuration
-
-Both files are local (not versioned).
-
-**`engines.json`**: how to run each inference engine. Edited by hand only: the page can pick an
-engine for a model but never write a command. Per engine:
-
-| Key | Meaning |
-|---|---|
-| `label` | name shown in the page |
-| `command` | argv (no shell). `~/` is expanded. A nested list is an optional group, dropped if a placeholder in it is empty |
-| `env` | extra environment; a variable that ends up empty is dropped |
-| `health`, `endpoint` | HTTP paths: readiness check, API shown in the page |
-| `procs` | process names (basename of argv[0] or argv[1]) used to detect the engine |
-| `match_file` | also match the model file in argv (one engine binary serving several models) |
-| `kinds` | model kinds it runs (`llm`, `decision`, `tts`…) |
-| `file_ext` | weight files it loads (`.gguf`…); empty = the engine fetches its own weights |
-| `loads_dir` | the engine loads the model's whole folder (all shards), e.g. vLLM |
-| `params` | settings per model: `label`, `default`, `values` (menu), `map` (value sent to the engine) |
-| `device_param` | param holding `cpu` / `cuda` / `auto` (auto = GPU if enough free VRAM) |
-| `provides_repos`, `uses`, `install_hint` | Hugging Face repos it downloads itself, where (under `~/ia_models`), how to install |
-| `repo`, `build`, `binary` | git clone of the engine: "check update" / "update" buttons (pull + build) |
-
-Placeholders in `command` / `env`: `{port}` `{file}` `{file_name}` `{file_dir}` `{models_dir}` `{model_id}`
-and every param. An argument or env variable that ends up empty is dropped (optional param).
-
-**`models.json`**: the models (engine, file, port, params, profiles), written by the page.
-Without it, the launcher starts with an empty list.
-
-**`settings.json`**: UI language, theme and models folder (default `~/ia_models`: downloads, and the
-weights of engines that fetch their own), set from the Settings page (every browser uses them).
-
-Any text of `engines.json`, `models.json` or the catalog (labels, descriptions) can be a plain string or
-one per language: `{"en": "Parallel sessions", "fr": "Sessions parallèles"}`.
-
-### Adding a language
-
-Copy `locales/en.json` to `locales/<code>.json` and translate the values: it appears in Settings.
-`just test` checks that every key used by the page and the server exists in every language.
-
-Environment variables: `IA_LAUNCHER_HOST` (default `0.0.0.0`), `IA_LAUNCHER_PORT` (default `8090`),
-`IA_LAUNCHER_MODELS_DIR` (models folder until one is set in Settings, default `~/ia_models`), `HF_TOKEN` (private Hugging Face models).
-
-## Architecture
-
-The server is the `ialauncher` package (standard library + `psutil` + `huggingface_hub`), in layers whose
-dependencies point inwards:
-
-| Layer | Role |
-|---|---|
-| `web/` | HTTP: route table (URL → service call), presenters (JSON for the page), server (transport, errors) |
-| `services/` | use cases: `supervisor` (start / stop / measure), `registry` (engines.json + models.json), `model_editor`, `library`, `downloads`, `catalog`, `updates`, `hub` (Hugging Face verdicts), `settings`, `jobs` (background jobs) |
-| `domain/` | pure rules, no I/O: engine command building, model validation, compatibility verdicts, card state / VRAM |
-| `infra/` | system access: GPU (`nvidia-smi`), processes, network, files, Hugging Face, git, Windows host |
-
-`app.py` wires the services together (composition root), `__main__.py` starts the server.
-Texts shown to the user come from `locales/<lang>.json` (same keys for the page and the server).
-
-The page is `web/`: plain HTML, CSS and native ES modules, no build step.
-
-| Path | Role |
-|---|---|
-| `index.html` | the shell of every view (header, sections, dialog), rendered in the UI language by `ialauncher/web/page.py` |
-| `css/` | `tokens.css` (colours, light / dark), `themes/` (cyber, pixel, neo), `base`, `dashboard`, `manage` |
-| `js/main.js` | entry point: picks the view, wires the components, reloads on events |
-| `js/views/` | `dashboard` (system panel + cards), `models-table`, `library`, `settings` |
-| `js/components/` | `model-card`, `model-form`, `hf-browser`, `engine-catalog`, `sparkline` |
-| `js/*.js` | `api`, `state` (what the page knows), `events` (tiny bus), `i18n` (`t()`), `dom`, `format`, `theme` |
-
-## Development
+To start the launcher when the machine (or WSL) boots:
 
 ```sh
-uv pip install --python venv-launcher/bin/python -r requirements-dev.txt
-just test             # pytest: domain rules, jobs, catalog, locales
+just install-service  # systemd service; then: just logs-service, just restart
 ```
 
-Tools:
-- `scripts/show-commands.py`: print the command each model would run, per profile (starts nothing)
-- `scripts/check-hf.py org/repo…`: print the launcher's verdicts for Hugging Face repositories
-- `scripts/fix-venv-paths.sh /old/path`: repair the venvs after moving this folder
+## Documentation
+
+- [How-to guides](docs/how-to.md): install an engine, add a model, profiles, custom engines, languages…
+- [Configuration](docs/configuration.md): `engines.json`, `models.json`, `settings.json`, environment variables
+- [Architecture](docs/architecture.md): how the code is organised
+- [Contributing](CONTRIBUTING.md)
+
+## License
+
+[MIT](LICENSE)

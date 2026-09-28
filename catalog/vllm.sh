@@ -7,12 +7,12 @@ mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 [ -x .venv/bin/python ] || uv venv -q --python 3.12 .venv
 if .venv/bin/python -c "import vllm" 2>/dev/null; then
-  step "vLLM deja installe : $(.venv/bin/python -c 'import vllm; print(vllm.__version__)')"
+  step "vLLM already installed: $(.venv/bin/python -c 'import vllm; print(vllm.__version__)')"
 else
-  step "Installation de vLLM (plusieurs Go)"
+  step "Installing vLLM (several GB)"
   uv pip install --python .venv/bin/python vllm --torch-backend=auto
 fi
-step "Script de lancement vllm-serve.sh"
+step "Writing the launch script vllm-serve.sh"
 cat > vllm-serve.sh <<'EOF'
 #!/usr/bin/env bash
 # vllm serve with the environment it needs under WSL (written by the launcher's engine catalog).

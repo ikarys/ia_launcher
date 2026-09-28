@@ -1,5 +1,5 @@
-# Lance l'IA Launcher au demarrage de la WSL : http://0.0.0.0:8090 (joignable depuis le LAN)
-# Installation : just install-service
+# Starts IA Launcher at boot: http://0.0.0.0:8090 (reachable from the LAN)
+# Install with: just install-service
 [Unit]
 Description=IA Launcher
 After=network.target
