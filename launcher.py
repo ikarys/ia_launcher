@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""IA Launcher : page web pour lancer / arreter les modeles locaux
-(Qwen via Ninfer, Laya) et voir ce qu'ils prennent en VRAM / RAM / CPU.
+"""IA Launcher: web page to start / stop local AI models and see their VRAM / RAM / CPU.
+Models (models.json) run on engines (engines.json): nothing model- or engine-specific in the code.
 
     just run   (ou service systemd : just install-service)   ->  http://<ip-lan>:8090 (ecoute sur 0.0.0.0)
 
 Les modeles lances d'ici sont arretes quand le launcher s'arrete (just restart aussi).
-Un Ninfer lance par l'ancien raccourci Windows est detecte et peut etre arrete.
+Un moteur lance hors du launcher est detecte (par ses noms de processus) et peut etre arrete.
 
 VRAM par modele : sous WSL, nvidia-smi ne donne pas la memoire par processus
 (N/A), seulement quels PID utilisent le GPU. On deduit donc :
@@ -59,61 +59,97 @@ def _die_with_launcher():
     _libc.prctl(1, signal.SIGTERM)  # PR_SET_PDEATHSIG
 
 
-# --- Moteurs ---------------------------------------------------------------------
-# Un moteur = comment lancer un type de modele. Liste fixe dans le code : la page
-# (joignable depuis le LAN) ne peut choisir qu'un de ces moteurs, jamais une commande.
-# "params" : parametres reglables dans models.json / le formulaire (cle -> libelle).
+# --- Engines (engines.json) ---------------------------------------------------------
+# An engine = how to run one kind of model: command, env, health check, params. They are
+# declared in engines.json (local, edited by hand only): the page, reachable from the LAN,
+# can pick one of them for a model but never write a command. See engines.example.json.
+# Placeholders in command / env: {port} {file} {file_name} {file_dir} {models_dir} {model_id}
+# and every param ({ctx}...). Optional param: an env var or argument that ends up empty is
+# dropped, and so is a group of arguments (a list inside command) with any empty placeholder.
 
-NINFER_SCRIPT = "/mnt/d/ninfer/start-ninfer.sh"
-LLAMA_PRISM = HOME / "llm" / "llama.cpp-prism"
-
-
-def ninfer_run(m, p, gpu):
-    f = Path(m["file"])
-    env = {
-        "MODEL": f.name,
-        "MODEL_DIR": str(f.parent),
-        "PORT": str(m["port"]),
-        "CONCURRENCY": p.get("concurrency", "4"),
-        "VISION": "0" if p.get("vision") == "off" else "1",
-    }
-    if p.get("ctx"):
-        env["MAX_CONTEXT"] = env["KV_CAPACITY"] = p["ctx"]
-    for k, var in (("spec", "SPEC"), ("draft", "DRAFT")):
-        if p.get(k):
-            env[var] = p[k]
-    return ["bash", NINFER_SCRIPT], env, vram_need(m)
+ENGINES_FILE = ROOT / "engines.json"
+PLACEHOLDER = re.compile(r"\{(\w+)\}")
+BUILTIN_VARS = {"port", "file", "file_name", "file_dir", "models_dir", "model_id"}
+# a model uses its "auto" device on GPU only if this much VRAM stays free on top of its own
+AUTO_DEVICE_MARGIN_MIB = 1536
 
 
-def llama_run(m, p, gpu):
-    cmd = [str(LLAMA_PRISM / "build" / "bin" / "llama-server"), "-m", m["file"],
-           "--host", "0.0.0.0", "--port", str(m["port"]),
-           "-ngl", p.get("ngl", "999"), "-fa", p.get("flash_attn", "on"),
-           "-c", p.get("ctx", "0"), "-np", p.get("parallel", "1"), *m.get("extra_args", [])]
-    return cmd, {}, vram_need(m)
+def expand(s):
+    return str(HOME / s[2:]) if isinstance(s, str) and s.startswith("~/") else s
 
 
-def laya_run(m, p, gpu):
-    device = p.get("device", "cpu")
-    if device == "auto":
-        free = gpu["total"] - gpu["used"] if gpu else 0
-        device = "cuda" if free >= 3000 else "cpu"
-    # ponytail: 1 seul checkpoint resident (multilingual, ~1,4 Go VRAM ; ~35 ms/req sur CPU).
-    # Un texte anglais recharge le checkpoint english a la volee ; LAYA_MAX_LOADED=2 si ca arrive souvent.
-    env = {
-        "LAYA_HOST": "0.0.0.0",
-        "LAYA_PORT": str(m["port"]),
-        "LAYA_DEVICE": device,
-        "LAYA_PRELOAD": "1",
-        "LAYA_MODELS": "multilingual",
-        "LAYA_MAX_LOADED": "1",
-        "HF_HUB_CACHE": str(MODELS_DIR / "hf"),
-        "HF_HUB_OFFLINE": "1",
-    }
-    # via le python du venv : le shebang de laya-serve contient le chemin absolu du
-    # venv et casse si le dossier est deplace (argv[1] reste "laya-serve" pour discover())
-    venv_bin = ROOT / "venv-laya" / "bin"
-    return [str(venv_bin / "python"), str(venv_bin / "laya-serve")], env, (vram_need(m) if device == "cuda" else 0)
+def flat(command):
+    return [x for a in command for x in (a if isinstance(a, list) else [a])]
+
+
+def check_engine(eid, e):
+    def need(cond, msg):
+        if not cond:
+            raise LaunchError(f"engines.json : {eid} : {msg}")
+    need(re.fullmatch(r"[\w.-]+", eid), "identifiant : lettres, chiffres, . _ - uniquement")
+    need(isinstance(e.get("label"), str) and e["label"], "label manquant")
+    need(isinstance(e.get("command"), list) and e["command"] and isinstance(e["command"][0], str)
+         and all(isinstance(a, str) or isinstance(a, list) and all(isinstance(x, str) for x in a) for a in e["command"]),
+         "command : liste de chaînes (ou de groupes optionnels [\"--opt\", \"{param}\"])")
+    need(isinstance(e.get("env", {}), dict) and all(isinstance(v, str) for v in e.get("env", {}).values()),
+         "env : valeurs en chaînes")
+    need(isinstance(e.get("procs"), list) and e["procs"], "procs : noms des processus du moteur (argv[0] / argv[1])")
+    for k in ("health", "endpoint"):
+        need(str(e.get(k, "")).startswith("/"), f"{k} : chemin HTTP commençant par /")
+    params = e.get("params", {})
+    need(isinstance(params, dict) and all(WORD.fullmatch(k) for k in params), "params : clés en lettres / chiffres")
+    need(e.get("device_param") in (None, *params), "device_param : doit être un des params")
+    for arg in [*flat(e["command"]), *e.get("env", {}).values()]:
+        for var in PLACEHOLDER.findall(arg):
+            need(var in BUILTIN_VARS or var in params, f"{{{var}}} : ni un param ni {', '.join(sorted(BUILTIN_VARS))}")
+
+
+def load_engines():
+    if not ENGINES_FILE.exists():
+        raise LaunchError("engines.json introuvable : copie engines.example.json et adapte-le.")
+    engines = json.loads(ENGINES_FILE.read_text())
+    for eid, e in engines.items():
+        check_engine(eid, e)
+        e["params"] = {k: v if isinstance(v, dict) else {"label": v} for k, v in e.get("params", {}).items()}
+        e["file_ext"] = e.get("file_ext", [])
+        e["needs_file"] = bool(e["file_ext"])
+        if e.get("repo"):
+            e["repo"] = expand(e["repo"])
+    return engines
+
+
+def engine_run(mid, m, p, gpu):
+    """models.json entry + chosen params -> (argv, env, VRAM to reserve before starting)."""
+    e = ENGINES[m["engine"]]
+    p = {k: spec.get("default", "") for k, spec in e["params"].items()} | p
+    need = vram_need(m)
+    dev = e.get("device_param")
+    if dev:
+        if p[dev] == "auto":
+            free = gpu["total"] - gpu["used"] if gpu else 0
+            p[dev] = "cuda" if free >= need + AUTO_DEVICE_MARGIN_MIB else "cpu"
+        if p[dev] == "cpu":
+            need = 0
+    values = {k: str(spec.get("map", {}).get(p[k], p[k])) for k, spec in e["params"].items()}
+    f = Path(m["file"]) if m.get("file") else None
+    values |= {"port": str(m["port"]), "models_dir": str(MODELS_DIR), "file": str(f or ""), "model_id": mid,
+               "file_name": f.name if f else "", "file_dir": str(f.parent) if f else ""}
+
+    def sub(s):
+        return PLACEHOLDER.sub(lambda mm: values[mm.group(1)], expand(s))
+
+    def empty(s):
+        return any(not values[v] for v in PLACEHOLDER.findall(s))
+    cmd = []
+    for a in e["command"]:
+        if isinstance(a, list):
+            if not any(empty(x) for x in a):
+                cmd += [sub(x) for x in a]
+        elif sub(a):
+            cmd.append(sub(a))
+    cmd += [str(a) for a in m.get("extra_args", [])]
+    env = {k: v for k, v in ((k, sub(v)) for k, v in e.get("env", {}).items()) if v}
+    return cmd, env, need
 
 
 def vram_estimate(size):
@@ -127,49 +163,12 @@ def vram_need(c):
     if c.get("vram_mib"):
         return c["vram_mib"]
     f = Path(c.get("file") or "/nonexistent")
-    return vram_estimate(f.stat().st_size) if f.is_file() else 0
+    if not f.is_file():
+        return 0
+    if ENGINES.get(c.get("engine"), {}).get("loads_dir"):  # the engine loads every shard of the folder
+        return vram_estimate(sum(x.stat().st_size for x in f.parent.glob(f"*{f.suffix}")))
+    return vram_estimate(f.stat().st_size)
 
-
-ENGINES = {
-    "ninfer": {
-        "label": "Ninfer", "run": ninfer_run, "needs_file": True,
-        "health": "/health", "endpoint": "/v1",
-        # basenames de argv[0] / argv[1] qui identifient ses processus
-        # ponytail: pas de distinction par fichier, 2 modeles ninfer lances en meme temps se confondraient
-        "procs": ["ninfer-serve", "start-ninfer.sh"],
-        # clone git du moteur : boutons "Vérifier MAJ" / "Mettre à jour" (pull + build, sans redemarrer)
-        "repo": str(HOME / "llm" / "ninfer"),
-        "build": ["cmake", "--build", "build"],  # config CMake/Ninja deja en cache dans build/
-        "binary": "build/apps/ninfer-serve",
-        "params": {"ctx": "Contexte max (tokens)", "concurrency": "Sessions parallèles",
-                   "vision": {"label": "Vision", "values": [["on", "activée"], ["off", "désactivée (libère de la VRAM)"]]},
-                   "spec": {"label": "Décodage spéculatif", "values": [["dflash2", "DFlash2"], ["mtp", "MTP"]]},
-                   "draft": "Tokens de brouillon"},
-    },
-    "llama.cpp-prism": {
-        "label": "llama.cpp (prism)", "run": llama_run, "needs_file": True,
-        "health": "/health", "endpoint": "/v1",
-        "procs": ["llama-server"], "match_file": True,  # plusieurs GGUF : reconnus par le fichier dans argv
-        "repo": str(LLAMA_PRISM),
-        "build": ["cmake", "--build", "build", "--target", "llama-server"],
-        "binary": "build/bin/llama-server",
-        "params": {"ctx": "Contexte (total, partagé entre sessions)", "parallel": "Sessions parallèles",
-                   "ngl": "Couches sur GPU (999 = toutes)",
-                   "flash_attn": {"label": "Flash attention", "values": [["on", "activée"], ["off", "désactivée"], ["auto", "auto"]]}},
-    },
-    "laya": {
-        "label": "laya-serve", "run": laya_run, "needs_file": False,
-        "health": "/health", "endpoint": "/v1/systemone",
-        "procs": ["laya-serve"],
-        "uses": ["hf/models--convaiinnovations--laya"],  # dans ~/ia_models : protege de la suppression
-        "params": {"device": {"label": "Calcul sur", "values": [["cpu", "CPU (~35 ms, 0 VRAM)"],
-                                                                ["auto", "auto (GPU si assez de VRAM)"],
-                                                                ["cuda", "GPU (~15 ms, ~1,4 Go)"]]}},
-    },
-}
-
-for _e in ENGINES.values():
-    _e["params"] = {k: v if isinstance(v, dict) else {"label": v} for k, v in _e["params"].items()}
 
 KINDS = {"llm": "LLM", "decision": "Décision", "tts": "Voix (TTS)", "stt": "Transcription (STT)",
          "embedding": "Embeddings", "image": "Image", "video": "Vidéo"}
@@ -220,6 +219,10 @@ def check_model(mid, c):
     need(isinstance(c.get("vram_mib", 0), int) and c.get("vram_mib", 0) >= 0, "vram_mib : entier en Mio")
     if e["needs_file"]:
         need(isinstance(c.get("file"), str) and Path(c["file"]).is_file(), f"fichier introuvable : {c.get('file')}")
+        need(Path(c["file"]).suffix in e["file_ext"], f"{e['label']} lance des {' / '.join(e['file_ext'])}")
+    need(isinstance(c.get("extra_args", []), list)
+         and all(isinstance(a, str) and re.fullmatch(r"[\w.:/+=,@-]{1,300}", a) for a in c.get("extra_args", [])),
+         "extra_args : liste d'arguments (lettres, chiffres, . : / + = , @ -)")
     for k, v in c.get("params", {}).items():
         need(k in e["params"], f"param inconnu pour {c['engine']} : {k} ({', '.join(e['params'])})")
         allowed = [x for x, _ in e["params"][k].get("values", [])]
@@ -277,6 +280,7 @@ def save_models(cfg):
     os.replace(tmp, CONFIG)
 
 
+ENGINES = load_engines()
 CFG, MODELS = load_models()
 CONFIG_LOCK = threading.Lock()
 
@@ -338,9 +342,18 @@ def discover():
         cmd = p.info["cmdline"] or []
         names = {os.path.basename(a) for a in cmd[:2]}
         for mid, m in models.items():
-            if names & set(m["procs"]) and (not m["match"] or m["match"] in cmd):
+            # engines loading the model folder (vLLM) get the file's directory in argv
+            if names & set(m["procs"]) and (not m["match"] or m["match"] in cmd or str(Path(m["match"]).parent) in cmd):
                 found[mid].append(p)
                 break
+    # + their children (e.g. vLLM's EngineCore, which holds the GPU memory)
+    for mid, ps in found.items():
+        seen = {p.pid for p in ps}
+        for p in list(ps):
+            try:
+                ps += [c for c in p.children(recursive=True) if c.pid not in seen and not seen.add(c.pid)]
+            except psutil.Error:
+                pass
     return found
 
 
@@ -397,7 +410,7 @@ def tail(path, lines=150):
 
 LIB = MODELS_DIR
 META = ".ia_meta.json"  # ecrit a cote des fichiers telecharges : depot, commit, dates
-HF_CLI = [str(ROOT / "venv-laya" / "bin" / "python"), "-m", "huggingface_hub.cli.hf"]
+HF_CLI = [sys.executable, "-m", "huggingface_hub.cli.hf"]  # huggingface_hub: requirements.txt
 REPO = re.compile(r"[\w.-]+/[\w.-]+")
 WEIGHTS = (".gguf", ".safetensors", ".ninfer", ".bin", ".pt", ".pth", ".onnx")
 QUANT = re.compile(r"(?i)(?<![a-z0-9])(i?q\d(?:_[a-z0-9]+)*|p?t?q\d_\d|nvfp4|mxfp4|fp8|fp16|bf16|f16|f32|int[48]|awq|gptq|exl2|\d+(?:\.\d+)?bpw)(?![a-z0-9])")
@@ -445,7 +458,6 @@ def hf_info(repo):
 # Regles simples (pas de LLM : le verdict doit etre fiable et explicable).
 
 SHARD = re.compile(r"-\d{5}-of-\d{5}")
-FORMAT_ENGINE = {"gguf": "llama.cpp-prism", "ninfer": "ninfer"}  # safetensors : pas de moteur installe (vLLM...)
 MIN_CC = {"NVFP4": 10.0, "MXFP4": 10.0, "FP8": 8.9}  # generation de GPU minimale pour ces formats
 
 
@@ -459,18 +471,39 @@ def hardware():
             "disk_free": shutil.disk_usage(LIB).free}
 
 
-def installed(engine):
-    e = ENGINES[engine]
-    return not e.get("repo") or (Path(e["repo"]) / e["binary"]).exists()
+def installed(eid):
+    return engine_present(ENGINES[eid])
 
 
-def fit(size, fmt, quant, hw):
-    """-> (verdict, explication). verdict : gpu | partial | no | incompatible | disk"""
+def engine_present(e):
+    """Engine's executable (and script given as first argument, e.g. bash /path/start.sh) present."""
+    exe = expand(e["command"][0])
+    arg = expand(e["command"][1]) if len(e["command"]) > 1 and isinstance(e["command"][1], str) else ""
+    ok = Path(exe).exists() if "/" in exe else shutil.which(exe)
+    ok = ok and (not arg.startswith("/") or "{" in arg or Path(arg).exists())
+    return bool(ok) and (not e.get("binary") or (Path(expand(e["repo"])) / e["binary"]).exists())
+
+
+def fit(size, fmt, quant, hw, repo=None, kind=None):
+    """-> (verdict, explication). verdict : installed | gpu | partial | no | incompatible | disk"""
     go = lambda mib: f"{mib / 1024:.1f}".replace(".", ",") + " Go"
     need = vram_estimate(size)
-    engine = FORMAT_ENGINE.get(fmt)
-    if not engine or not installed(engine):
-        return "incompatible", f"Format {fmt} : aucun moteur installé pour le lancer (il faudrait vLLM ou transformers)."
+    # engines that fetch their own weights (e.g. a server reading the HF cache)
+    for e in ENGINES.values():
+        if repo in e.get("provides_repos", []):
+            if all((LIB / u).exists() for u in e.get("uses", [])):
+                return "installed", f"Déjà installé : {e['label']} charge ce modèle lui-même. Rien à télécharger."
+            return "incompatible", (f"{e['label']} télécharge ce modèle lui-même"
+                                    + (f" : {e['install_hint']}" if e.get("install_hint") else "") + ".")
+    engines = [eid for eid, e in ENGINES.items() if f".{fmt}" in e["file_ext"]]
+    if not engines:
+        return "incompatible", f"Format {fmt} : aucun moteur de engines.json ne lance ce format."
+    fitting = [eid for eid in engines if kind is None or kind in ENGINES[eid].get("kinds", [kind])]
+    if not fitting:
+        labels = ", ".join(ENGINES[eid]["label"] for eid in engines)
+        return "incompatible", f"Modèle de type {KINDS.get(kind, kind)} : {labels} ne lance pas ce genre de modèle."
+    if not any(installed(eid) for eid in fitting):
+        return "incompatible", f"Format {fmt} : {ENGINES[fitting[0]]['label']} est déclaré mais pas installé."
     if quant in MIN_CC and (hw["cc"] or 0) < MIN_CC[quant]:
         return "incompatible", f"{quant} demande un GPU de génération {MIN_CC[quant]}+, le tien est en {hw['cc']}."
     if size > hw["disk_free"]:
@@ -485,7 +518,7 @@ def fit(size, fmt, quant, hw):
     return "no", f"Trop gros : ~{go(need)} nécessaires, {go(usable)} de VRAM" + (" + RAM." if fmt == "gguf" else ".")
 
 
-def variants(repo, files, hw):
+def variants(repo, files, hw, kind=None):
     """Regroupe les fichiers d'un depot en variantes lancables (1 GGUF decoupe = 1 variante)."""
     groups = {}
     has_st = any(f["name"].endswith(".safetensors") for f in files)
@@ -509,20 +542,24 @@ def variants(repo, files, hw):
         if "mmproj" in v["name"].lower():
             v["verdict"], v["why"] = "extra", "Projecteur vision : optionnel, à télécharger avec le modèle pour les images."
         else:
-            v["verdict"], v["why"] = fit(v["size"], v["format"], v["quant"], hw)
+            v["verdict"], v["why"] = fit(v["size"], v["format"], v["quant"], hw, repo, kind)
+            if v["verdict"] == "incompatible":
+                v["suggest"] = suggest_engine(v["format"], kind, repo, hw)
         v["files"] = [f["name"] for f in v["files"]]
         out.append(v)
     return sorted(out, key=lambda v: -v["size"])
 
 
 def hf_check(repo):
-    """Infos du depot + verdict par variante ; si rien ne tient sur le GPU, cherche d'autres depots
-    quantifies du meme modele de base qui tiennent."""
+    """Infos du depot + verdict par variante ; si c'est un LLM trop gros pour le GPU, cherche
+    d'autres depots quantifies du meme modele de base qui tiennent."""
     info, hw = hf_info(repo), hardware()
     info["hardware"] = hw
-    info["variants"] = variants(repo, info["files"], hw)
+    info["variants"] = variants(repo, info["files"], hw, info["kind"])
     info["alternatives"] = []
-    if any(v["verdict"] == "gpu" for v in info["variants"]):
+    # les versions GGUF d'un autre depot ne valent que pour un LLM : un GGUF de modele de
+    # decision / TTS... ne se lance pas avec llama-server
+    if any(v["verdict"] in ("gpu", "installed") for v in info["variants"]) or info["kind"] not in (None, "llm"):
         return info
     base = info["base"] or repo
     try:
@@ -539,7 +576,7 @@ def hf_check(repo):
             ci = hf_info(cand)
         except Exception:
             return None
-        ok = [v for v in variants(cand, ci["files"], hw) if v["verdict"] == "gpu"]
+        ok = [v for v in variants(cand, ci["files"], hw, ci["kind"]) if v["verdict"] == "gpu"]
         # la plus grosse variante qui tient = la meilleure qualite
         return ok and {"repo": cand, "downloads": ci["downloads"], **max(ok, key=lambda v: v["size"])}
     with ThreadPoolExecutor(6) as ex:
@@ -644,7 +681,7 @@ def library():
     for p in sorted(LIB.iterdir()):
         if p.name.startswith("."):
             continue
-        if p.name == "hf":  # cache Hugging Face (Laya) : un depot par dossier models--org--nom
+        if p.name == "hf":  # Hugging Face cache (engines that fetch their own weights): one repo per models--org--name
             for d in sorted(p.glob("models--*")):
                 ref = d / "refs" / "main"
                 # les snapshots sont des liens vers des blobs (parfois partages dans hf/blobs)
@@ -687,6 +724,137 @@ def lib_delete(rel):
             raise LaunchError("hf cache rm : " + (r.stderr or r.stdout).strip()[-300:])
     else:
         shutil.rmtree(p) if p.is_dir() else p.unlink()
+
+
+# --- Engine catalog (catalog/) ------------------------------------------------------------
+# Known engines, versioned with the launcher: what each one runs, and a script installing it
+# in ~/llm/<engine> (idempotent: running it again updates / reconfigures). The page can only
+# pick a catalog id; once installed, the engine's block is added to engines.json if its id is free.
+
+CATALOG_DIR = ROOT / "catalog"
+CATALOG = json.loads((CATALOG_DIR / "catalog.json").read_text())
+
+
+def catalog_state(cid):
+    """configured: in engines.json and present | present: on disk (maybe partly), not configured | available"""
+    c = CATALOG[cid]
+    if cid in ENGINES and installed(cid):
+        return "configured"
+    found = engine_present(c["engine"]) or c.get("detect") and (Path(expand(c["dir"])) / c["detect"]).exists()
+    return "present" if found else "available"
+
+
+def catalog_compat(cid, hw_cc):
+    need = CATALOG[cid].get("min_cc")
+    if need and (hw_cc or 0) < need:
+        return False, f"Demande un GPU de génération {need}+, le tien est en {hw_cc}."
+    return True, ""
+
+
+def suggest_engine(fmt, kind, repo, hw):
+    """Catalog engine that would run this variant, if it isn't set up yet."""
+    for cid, c in CATALOG.items():
+        e = c["engine"]
+        runs = repo in e.get("provides_repos", []) or (
+            f".{fmt}" in e.get("file_ext", []) and (kind is None or kind in e.get("kinds", [kind])))
+        if runs and catalog_state(cid) != "configured" and catalog_compat(cid, hw["cc"])[0]:
+            return {"id": cid, "label": c["label"], "disk_gb": c["disk_gb"], "minutes": c["minutes"],
+                    "state": catalog_state(cid)}
+    return None
+
+
+def compact_json(v, ind=0, lead=0, width=110):
+    """JSON as written by hand: a value on one line when it fits, else one entry per line."""
+    one = json.dumps(v, ensure_ascii=False)
+    if not isinstance(v, (dict, list)) or not v or ind + lead + len(one) <= width:
+        return one
+    pad = " " * (ind + 2)
+    if isinstance(v, dict):
+        rows = [f"{pad}{json.dumps(k, ensure_ascii=False)}: {compact_json(x, ind + 2, len(k) + 4, width)}"
+                for k, x in v.items()]
+        return "{\n" + ",\n".join(rows) + "\n" + " " * ind + "}"
+    if all(not isinstance(x, (dict, list)) for x in v):  # plain values: fill each line up to the width
+        lines, cur = [], ""
+        for x in (json.dumps(x, ensure_ascii=False) for x in v):
+            if cur and ind + 2 + len(cur) + len(x) + 2 > width:
+                lines.append(cur)
+                cur = ""
+            cur += (", " if cur else "") + x
+        return "[\n" + ",\n".join(pad + line for line in lines + [cur]) + "\n" + " " * ind + "]"
+    return "[\n" + ",\n".join(pad + compact_json(x, ind + 2, 0, width) for x in v) + "\n" + " " * ind + "]"
+
+
+def save_engines(raw):
+    tmp = ENGINES_FILE.with_suffix(".tmp")
+    tmp.write_text(compact_json(raw) + "\n")
+    os.replace(tmp, ENGINES_FILE)
+
+
+class Installs:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.jobs = {}  # catalog id -> {state: running|done|error, msg, popen}
+
+    def start(self, cid):
+        if cid not in CATALOG:
+            raise LaunchError("Moteur inconnu du catalogue.")
+        gpu = query_gpu()
+        ok, why = catalog_compat(cid, gpu and gpu["cc"])
+        if not ok:
+            raise LaunchError(why)
+        c = CATALOG[cid]
+        with self.lock:
+            if self.jobs.get(cid, {}).get("state") == "running":
+                raise LaunchError("Installation déjà en cours.")
+            log = open(LOG_DIR / f"engine-{cid}.log", "w")
+            env = {**os.environ, "INSTALL_DIR": expand(c["dir"]), "GPU_CC": str(gpu["cc"]) if gpu else ""}
+            popen = SPAWNER.submit(
+                subprocess.Popen, ["bash", str(CATALOG_DIR / c["script"])], env=env, cwd=CATALOG_DIR,
+                stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
+                preexec_fn=_die_with_launcher).result()
+            log.close()
+            self.jobs[cid] = {"state": "running", "msg": f"Installation dans {c['dir']}…", "popen": popen}
+        threading.Thread(target=self._wait, args=(cid,), daemon=True).start()
+
+    def _wait(self, cid):
+        j = self.jobs[cid]
+        code = j["popen"].wait()
+        if code:
+            j.update(state="error", msg=f"Échec (code {code}) : voir le log.")
+            return
+        try:
+            j.update(state="done", msg=self.register(cid))
+        except Exception as e:
+            j.update(state="error", msg=f"Installé, mais engines.json non mis à jour : {e}")
+
+    @staticmethod
+    def register(cid):
+        global ENGINES
+        with CONFIG_LOCK:
+            raw = json.loads(ENGINES_FILE.read_text()) if ENGINES_FILE.exists() else {}
+            if cid in raw:
+                return f"Installé. « {cid} » était déjà dans engines.json : laissé tel quel."
+            raw[cid] = CATALOG[cid]["engine"]
+            check_engine(cid, json.loads(json.dumps(raw[cid])))
+            save_engines(raw)
+            ENGINES = load_engines()
+        return "Installé et ajouté à engines.json : il est proposé dans le formulaire des modèles."
+
+    def status(self, hw_cc):
+        out = []
+        for cid, c in CATALOG.items():
+            e, j = c["engine"], self.jobs.get(cid)
+            ok, why = catalog_compat(cid, hw_cc)
+            out.append({"id": cid, "label": c["label"], "desc": c["desc"], "url": c["url"], "dir": c["dir"],
+                        "disk_gb": c["disk_gb"], "minutes": c["minutes"], "kinds": e.get("kinds", []),
+                        "file_ext": e.get("file_ext", []), "state": catalog_state(cid),
+                        "compatible": ok, "why": why,
+                        "job": j and {"state": j["state"], "msg": j["msg"],
+                                      "log": tail(LOG_DIR / f"engine-{cid}.log", 40)}})
+        return out
+
+
+INSTALLS = Installs()
 
 
 # --- Launcher ---------------------------------------------------------------------
@@ -835,7 +1003,7 @@ class Launcher:
                 v = str(opts.get(o["key"], o["default"]))
                 clean[o["key"]] = v if v in [c[0] for c in o["choices"]] else o["default"]
             gpu = query_gpu()
-            cmd, env, vram_needed = ENGINES[m["engine_id"]]["run"](m["config"], m["fixed"] | clean, gpu)
+            cmd, env, vram_needed = engine_run(mid, m["config"], m["fixed"] | clean, gpu)
             if gpu and vram_needed:
                 free = gpu["total"] - gpu["used"]
                 if free < vram_needed:
@@ -987,10 +1155,16 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/models":
             return self._send(200, {
                 "models": MODELS, "kinds": KINDS, "task_kind": TASK_KIND,
-                "engines": {k: {"label": e["label"], "params": e["params"], "needs_file": e["needs_file"]}
+                "engines": {k: {"label": e["label"], "params": e["params"], "needs_file": e["needs_file"],
+                                "file_ext": e["file_ext"], "kinds": e.get("kinds"), "installed": installed(k)}
                             for k, e in ENGINES.items()}})
         if self.path == "/api/library":
             return self._send(200, library())
+        if self.path == "/api/engines":
+            gpu = query_gpu()
+            return self._send(200, {"catalog": INSTALLS.status(gpu and gpu["cc"]),
+                                    "configured": {k: {"label": e["label"], "installed": installed(k)}
+                                                   for k, e in ENGINES.items()}})
         m = re.fullmatch(r"/api/logs/(\w+)", self.path)
         if m and m.group(1) in MODELS:
             mid = m.group(1)
@@ -1048,6 +1222,10 @@ class Handler(BaseHTTPRequestHandler):
             m = re.fullmatch(r"/api/hf/cancel/(\d+)", self.path)
             if m:
                 DOWNLOADS.cancel(int(m.group(1)))
+                return self._send(200, {"ok": True})
+            m = re.fullmatch(r"/api/engines/install/([\w.-]+)", self.path)
+            if m:
+                INSTALLS.start(m.group(1))
                 return self._send(200, {"ok": True})
             if self.path == "/api/library/delete":
                 lib_delete(str(self._body().get("path", "")))

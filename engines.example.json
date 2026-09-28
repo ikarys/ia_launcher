@@ -1,0 +1,43 @@
+{
+  "llama.cpp": {
+    "label": "llama.cpp",
+    "kinds": ["llm"],
+    "file_ext": [".gguf"],
+    "command": ["~/llama.cpp/build/bin/llama-server", "-m", "{file}", "--host", "0.0.0.0",
+                "--port", "{port}", "-ngl", "{ngl}", "-c", "{ctx}", "-np", "{parallel}"],
+    "health": "/health",
+    "endpoint": "/v1",
+    "procs": ["llama-server"],
+    "match_file": true,
+    "repo": "~/llama.cpp",
+    "build": ["cmake", "--build", "build", "--target", "llama-server"],
+    "binary": "build/bin/llama-server",
+    "params": {
+      "ctx": {"label": "Context (tokens, shared by sessions)", "default": "0"},
+      "parallel": {"label": "Parallel sessions", "default": "1"},
+      "ngl": {"label": "GPU layers (999 = all)", "default": "999"}
+    }
+  },
+  "my-classifier": {
+    "label": "my-classifier-serve",
+    "kinds": ["decision"],
+    "command": ["~/llm/my-classifier/.venv/bin/python", "~/llm/my-classifier/.venv/bin/my-classifier-serve"],
+    "env": {
+      "PORT": "{port}",
+      "DEVICE": "{device}",
+      "HF_HUB_CACHE": "{models_dir}/hf",
+      "HF_HUB_OFFLINE": "1"
+    },
+    "health": "/health",
+    "endpoint": "/v1/classify",
+    "procs": ["my-classifier-serve"],
+    "device_param": "device",
+    "uses": ["hf/models--some-org--my-classifier"],
+    "provides_repos": ["some-org/my-classifier"],
+    "install_hint": "bash ~/llm/my-classifier/install.sh",
+    "params": {
+      "device": {"label": "Device", "default": "cpu",
+                 "values": [["cpu", "CPU"], ["auto", "auto (GPU if enough VRAM)"], ["cuda", "GPU"]]}
+    }
+  }
+}

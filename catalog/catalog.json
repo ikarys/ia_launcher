@@ -1,0 +1,130 @@
+{
+  "llama.cpp": {
+    "label": "llama.cpp",
+    "desc": "Serveur OpenAI pour les modèles GGUF (LLM, vision). Le plus polyvalent : toutes les quantifications, déchargement partiel GPU / RAM.",
+    "url": "https://github.com/ggml-org/llama.cpp",
+    "dir": "~/llm/llama.cpp",
+    "script": "llama.cpp.sh",
+    "disk_gb": 3,
+    "minutes": 15,
+    "engine": {
+      "label": "llama.cpp",
+      "kinds": ["llm"],
+      "file_ext": [".gguf"],
+      "command": ["~/llm/llama.cpp/build/bin/llama-server", "-m", "{file}", "--host", "0.0.0.0", "--port", "{port}",
+                  "--alias", "{model_id}", "-ngl", "{ngl}", "-fa", "{flash_attn}", "-c", "{ctx}", "-np", "{parallel}"],
+      "health": "/health",
+      "endpoint": "/v1",
+      "procs": ["llama-server"],
+      "match_file": true,
+      "repo": "~/llm/llama.cpp",
+      "build": ["cmake", "--build", "build", "--target", "llama-server"],
+      "binary": "build/bin/llama-server",
+      "params": {
+        "ctx": {"label": "Contexte (total, partagé entre sessions)", "default": "0"},
+        "parallel": {"label": "Sessions parallèles", "default": "1"},
+        "ngl": {"label": "Couches sur GPU (999 = toutes)", "default": "999"},
+        "flash_attn": {"label": "Flash attention", "default": "on",
+                       "values": [["on", "activée"], ["off", "désactivée"], ["auto", "auto"]]}
+      }
+    }
+  },
+  "vllm": {
+    "label": "vLLM",
+    "desc": "Serveur OpenAI pour les modèles safetensors (dépôt Hugging Face complet), FP8 / NVFP4 / AWQ… Très rapide à plusieurs sessions, mais réserve la VRAM d'avance.",
+    "url": "https://github.com/vllm-project/vllm",
+    "dir": "~/llm/vllm",
+    "detect": ".venv/bin/vllm",
+    "script": "vllm.sh",
+    "disk_gb": 12,
+    "minutes": 10,
+    "engine": {
+      "label": "vLLM",
+      "kinds": ["llm"],
+      "file_ext": [".safetensors"],
+      "loads_dir": true,
+      "command": ["~/llm/vllm/vllm-serve.sh", "{file_dir}", "--served-model-name", "{model_id}",
+                  "--host", "0.0.0.0", "--port", "{port}", "--max-model-len", "{ctx}",
+                  "--gpu-memory-utilization", "{gpu_mem}", "--max-num-seqs", "{parallel}", "--enable-prefix-caching"],
+      "health": "/health",
+      "endpoint": "/v1",
+      "procs": ["vllm-serve.sh", "vllm"],
+      "match_file": true,
+      "params": {
+        "ctx": {"label": "Contexte max (tokens)", "default": "32768"},
+        "parallel": {"label": "Sessions parallèles max", "default": "8"},
+        "gpu_mem": {"label": "Part de la VRAM réservée", "default": "0.90",
+                    "values": [["0.90", "90 %"], ["0.80", "80 %"], ["0.70", "70 %"], ["0.95", "95 %"]]}
+      }
+    }
+  },
+  "ninfer": {
+    "label": "Ninfer",
+    "desc": "Moteur CUDA spécialisé (fork co-l) pour les modèles .ninfer, NVFP4 + décodage spéculatif. Réservé aux GPU Blackwell (RTX 50xx).",
+    "url": "https://github.com/co-l/ninfer",
+    "dir": "~/llm/ninfer",
+    "script": "ninfer.sh",
+    "disk_gb": 2,
+    "minutes": 20,
+    "min_cc": 12.0,
+    "engine": {
+      "label": "Ninfer",
+      "kinds": ["llm"],
+      "file_ext": [".ninfer"],
+      "command": ["~/llm/ninfer/build/apps/ninfer-serve", "{file}", "--host", "0.0.0.0", "--port", "{port}",
+                  "--model-id", "{model_id}", "--max-context", "{ctx}", "--kv-capacity", "{ctx}",
+                  "--max-concurrency", "{concurrency}", "--kv-dtype", "{kv_dtype}",
+                  ["--spec", "{spec}", "--draft-tokens", "{draft}"], "{vision}"],
+      "health": "/health",
+      "endpoint": "/v1",
+      "procs": ["ninfer-serve"],
+      "match_file": true,
+      "repo": "~/llm/ninfer",
+      "build": ["cmake", "--build", "build"],
+      "binary": "build/apps/ninfer-serve",
+      "params": {
+        "ctx": {"label": "Contexte max (tokens)", "default": "131072"},
+        "concurrency": {"label": "Sessions parallèles", "default": "4"},
+        "kv_dtype": {"label": "Cache KV", "default": "nvfp4",
+                     "values": [["nvfp4", "NVFP4"], ["fp8", "FP8"], ["bf16", "BF16"]]},
+        "vision": {"label": "Vision", "default": "on", "map": {"on": "--vision", "off": ""},
+                   "values": [["on", "activée"], ["off", "désactivée (libère de la VRAM)"]]},
+        "spec": {"label": "Décodage spéculatif", "values": [["dflash2", "DFlash2"], ["mtp", "MTP"]]},
+        "draft": {"label": "Tokens de brouillon", "default": "7"}
+      }
+    }
+  },
+  "laya": {
+    "label": "laya-serve",
+    "desc": "Serveur du modèle de décision Laya (choix typés, oui / non, scores) : télécharge lui-même ses checkpoints. Tourne très bien sur CPU.",
+    "url": "https://huggingface.co/convaiinnovations/laya",
+    "dir": "~/llm/laya",
+    "script": "laya.sh",
+    "disk_gb": 8,
+    "minutes": 5,
+    "engine": {
+      "label": "laya-serve",
+      "kinds": ["decision"],
+      "command": ["~/llm/laya/.venv/bin/python", "~/llm/laya/.venv/bin/laya-serve"],
+      "env": {
+        "LAYA_HOST": "0.0.0.0",
+        "LAYA_PORT": "{port}",
+        "LAYA_DEVICE": "{device}",
+        "LAYA_PRELOAD": "1",
+        "HF_HUB_CACHE": "{models_dir}/hf",
+        "HF_HUB_OFFLINE": "1"
+      },
+      "health": "/health",
+      "endpoint": "/v1/systemone",
+      "procs": ["laya-serve"],
+      "device_param": "device",
+      "uses": ["hf/models--convaiinnovations--laya"],
+      "provides_repos": ["convaiinnovations/laya", "convaiinnovations/laya-multilingual",
+                         "convaiinnovations/laya-typed-decisions"],
+      "params": {
+        "device": {"label": "Calcul sur", "default": "cpu",
+                   "values": [["cpu", "CPU (0 VRAM)"], ["auto", "auto (GPU si assez de VRAM)"], ["cuda", "GPU"]]}
+      }
+    }
+  }
+}
