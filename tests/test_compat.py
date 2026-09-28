@@ -68,7 +68,7 @@ def test_variants_group_shards_and_suggest_missing_engines():
     assert out["m-Q4_K_M.gguf"]["size"] == 6 * GB and out["m-Q4_K_M.gguf"]["quant"] == "Q4_K_M"
     assert out["mmproj-F16.gguf"]["verdict"] == "extra"
     st = out["Safetensors weights (whole repository)"]
-    assert st["verdict"] == "incompatible" and st["suggest"] == {"id": "vllm"}
+    assert st["verdict"] == "install" and st["suggest"] == {"id": "vllm"}
     assert "config.json" in st["files"] and suggested == ["safetensors"]
 
 
@@ -80,9 +80,15 @@ def test_tts_repository_suggests_the_tts_engine():
                          installed=lambda eid: eid == "llama", lib_has=lambda rel: True,
                          suggest=lambda fmt, kind, repo: asked.append((fmt, kind)) or {"id": "omni"})
     [v] = compat.variants("Qwen/tts", files, "tts", ctx)
-    assert v["verdict"] == "incompatible" and v["suggest"] == {"id": "omni"}
+    assert v["verdict"] == "install" and v["suggest"] == {"id": "omni"}
     assert asked == [("safetensors", "tts")]
     assert v["files"] == ["model.safetensors", "config.json"]
+
+
+def test_incompatible_without_a_suggestion_stays_incompatible():
+    files = [{"name": "model.safetensors", "size": 4 * GB}, {"name": "config.json", "size": 1000}]
+    [v] = compat.variants("org/m", files, "llm", context())
+    assert v["verdict"] == "incompatible" and "suggest" not in v
 
 
 def test_quant_of():

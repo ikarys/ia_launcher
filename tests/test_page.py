@@ -12,7 +12,7 @@ JS_KEY = re.compile(r"""\bt\(\s*["']([\w.]+)["']""")
 DYNAMIC = {"ui.theme.": ["auto", "light", "dark", "cyber", "pixel", "neo"],
            "ui.state.": ["stopped", "starting", "ready", "stopping", "error"],
            "ui.vram.": ["live", "estimate", "load", "shared", "cpu"],
-           "ui.verdict.": ["installed", "gpu", "partial", "no", "incompatible", "disk", "extra"],
+           "ui.verdict.": ["installed", "gpu", "partial", "no", "incompatible", "install", "disk", "extra"],
            "ui.src.": ["hf_cache", "hf", "local"],
            "ui.col.": ["model", "kind", "engine", "file", "port", "runs", "state", "quant", "version", "date", "size",
                        "used_by"],

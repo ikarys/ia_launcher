@@ -146,6 +146,7 @@
   "ui.hf.downloads": "{n} downloads",
   "ui.hf.view": "View repository",
   "ui.hf.download": "Download",
+  "ui.hf.install_first": "To use this model, install the suggested engine.",
   "ui.hf.none_usable": "No variant usable with the installed engines.",
   "ui.hf.nothing_fits": "Nothing fits on your GPU.",
   "ui.hf.smallest": "The smallest variant ({name}, {size}): {why} No other compatible quantized version found on Hugging Face.",
@@ -154,6 +155,7 @@
   "ui.verdict.partial": "GPU + RAM (slow)",
   "ui.verdict.no": "Too big",
   "ui.verdict.incompatible": "Incompatible",
+  "ui.verdict.install": "Needs an engine",
   "ui.verdict.disk": "Disk full",
   "ui.verdict.extra": "Optional",
 

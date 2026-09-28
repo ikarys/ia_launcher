@@ -146,6 +146,7 @@
   "ui.hf.downloads": "{n} téléchargements",
   "ui.hf.view": "Voir le dépôt",
   "ui.hf.download": "Télécharger",
+  "ui.hf.install_first": "Pour utiliser ce modèle, installe le moteur suggéré.",
   "ui.hf.none_usable": "Aucune variante utilisable avec les moteurs installés.",
   "ui.hf.nothing_fits": "Rien ne tient sur ton GPU.",
   "ui.hf.smallest": "La plus petite variante ({name}, {size}) : {why} Aucune autre version quantifiée compatible trouvée sur Hugging Face.",
@@ -154,6 +155,7 @@
   "ui.verdict.partial": "GPU + RAM (lent)",
   "ui.verdict.no": "Trop gros",
   "ui.verdict.incompatible": "Incompatible",
+  "ui.verdict.install": "Moteur requis",
   "ui.verdict.disk": "Disque plein",
   "ui.verdict.extra": "Optionnel",
 

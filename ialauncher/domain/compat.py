@@ -94,8 +94,11 @@ def variants(repo, files, kind, ctx):
             v["verdict"], v["why"] = "extra", tr("fit.mmproj")
         else:
             v["verdict"], v["why"] = fit(v["size"], v["format"], v["quant"], ctx, repo, kind)
-            if v["verdict"] == "incompatible":
-                v["suggest"] = ctx.suggest(v["format"], kind, repo)
+            if v["verdict"] == "incompatible":  # a fix exists: not a dead end, it needs an install
+                suggestion = ctx.suggest(v["format"], kind, repo)
+                if suggestion:
+                    v["suggest"] = suggestion
+                    v["verdict"] = "install"
         v["files"] = [f["name"] for f in v["files"]]
         out.append(v)
     return sorted(out, key=lambda v: -v["size"])

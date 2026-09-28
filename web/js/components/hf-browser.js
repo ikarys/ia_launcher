@@ -35,13 +35,16 @@ function adviceHtml(d) {
   const main = d.variants.filter(v => v.verdict !== "extra");
   const fits = d.variants.some(v => ["gpu", "installed"].includes(v.verdict));
   const allIncompatible = main.length && main.every(v => v.verdict === "incompatible");
+  const allInstall = main.length && main.every(v => v.verdict === "install");
   if (d.alternatives.length) {
-    const why = !main.length ? "" : t(allIncompatible ? "ui.hf.none_format" : "ui.hf.none_fits");
+    const why = !main.length ? "" : t(allInstall ? "ui.hf.install_first"
+      : allIncompatible ? "ui.hf.none_format" : "ui.hf.none_fits");
     return `<div class="alts"><b>${esc(why)} ${esc(t("ui.hf.alternatives", { base: d.base_searched }))}</b>
       ${d.alternatives.map(alternativeHtml).join("")}</div>`;
   }
   if (fits || !main.length) return "";
   const smallest = main.reduce((a, v) => v.size < a.size ? v : a);
+  if (allInstall) return `<div class="alts"><b>${esc(t("ui.hf.install_first"))}</b></div>`;
   if (allIncompatible) return `<div class="alts"><b>${esc(t("ui.hf.none_usable"))}</b> ${esc(smallest.why)}</div>`;
   return `<div class="alts"><b>${esc(t("ui.hf.nothing_fits"))}</b> ${esc(t("ui.hf.smallest",
     { name: smallest.quant || smallest.name, size: size(smallest.size), why: smallest.why }))}</div>`;
