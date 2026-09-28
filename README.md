@@ -1,33 +1,32 @@
 # IA Launcher
 
-Page web locale pour lancer / arrêter des modèles d'IA locaux (LLM via Ninfer ou
-llama.cpp, modèle de décision Laya) sous WSL, et voir ce qu'ils consomment en
-VRAM / RAM / CPU.
+Local web page to start / stop local AI models (LLMs via Ninfer or llama.cpp,
+Laya decision model) under WSL, and see their VRAM / RAM / CPU usage.
 
-- Lancement / arrêt des modèles, avec profils (contexte, sessions, vision, device…)
-- Suivi VRAM par modèle (déduit, `nvidia-smi` sous WSL ne donne pas la mémoire par processus)
-- Ajout / édition des modèles et téléchargements Hugging Face depuis la page
-- Détection des conflits de port
+- Start / stop models, with profiles (context, sessions, vision, device…)
+- Per-model VRAM tracking (inferred: `nvidia-smi` under WSL doesn't report per-process memory)
+- Add / edit models and download from Hugging Face from the page
+- Port conflict detection
 
-## Démarrage
+## Getting started
 
-Prérequis : WSL (Ubuntu), [uv](https://github.com/astral-sh/uv), [just](https://github.com/casey/just), GPU NVIDIA.
+Requirements: WSL (Ubuntu), [uv](https://github.com/astral-sh/uv), [just](https://github.com/casey/just), NVIDIA GPU.
 
 ```sh
-just run              # http://0.0.0.0:8090 (joignable depuis le LAN)
-just install-service  # ou : service systemd lancé au boot de la WSL
+just run              # http://0.0.0.0:8090 (reachable from the LAN)
+just install-service  # or: systemd service started at WSL boot
 ```
 
-Le venv du launcher (`venv-launcher`, dépendance : `psutil`) est créé au premier lancement.
-Laya s'installe avec `setup/install-laya.sh`.
+The launcher venv (`venv-launcher`, dependency: `psutil`) is created on first run.
+Install Laya with `setup/install-laya.sh`.
 
-Côté Windows, `windows/ia-launcher.ps1` démarre le launcher dans WSL, ouvre la
-page et bloque la mise en veille tant que la fenêtre est ouverte.
+On Windows, `windows/ia-launcher.ps1` starts the launcher in WSL, opens the
+page, and blocks sleep while its window is open.
 
 ## Configuration
 
-Les modèles sont décrits dans `models.json` (local, non versionné), écrit par la
-page. Sans ce fichier, le launcher démarre avec une liste vide.
+Models are described in `models.json` (local, not versioned), written by the
+page. Without this file, the launcher starts with an empty list.
 
-Variables d'environnement : `IA_LAUNCHER_HOST` (défaut `0.0.0.0`),
-`IA_LAUNCHER_PORT` (défaut `8090`), `HF_TOKEN` (modèles Hugging Face privés).
+Environment variables: `IA_LAUNCHER_HOST` (default `0.0.0.0`),
+`IA_LAUNCHER_PORT` (default `8090`), `HF_TOKEN` (private Hugging Face models).

@@ -6,7 +6,7 @@ run:
 
 # Lance le launcher au boot de la WSL (service systemd)
 install-service:
-    sudo rm -f /etc/systemd/system/ia-launcher.service  # ancienne install = lien vers le modele
+    sudo rm -f /etc/systemd/system/ia-launcher.service  # old install = symlink to the template
     sed "s|@USER@|$USER|; s|@DIR@|$PWD|" ia-launcher.service | sudo tee /etc/systemd/system/ia-launcher.service >/dev/null
     sudo systemctl daemon-reload
     sudo systemctl enable --now ia-launcher

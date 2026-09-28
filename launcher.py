@@ -253,7 +253,7 @@ def resolve(mid, c):
 
 
 def load_models():
-    cfg = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}  # models.json : local, hors git
+    cfg = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}  # models.json: local, not in git
     for mid, c in cfg.items():
         check_model(mid, c)
     return cfg, {mid: resolve(mid, c) for mid, c in cfg.items()}
