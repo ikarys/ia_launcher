@@ -2,10 +2,9 @@
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from .. import config
 from ..errors import LaunchError
 from ..i18n import tr
-from . import routes
+from . import routes, static
 
 MAX_BODY = 1 << 20
 
@@ -47,9 +46,12 @@ def make_handler(app):
                 self._send(500, {"error": f"{type(e).__name__}: {e}"})
 
         def do_GET(self):
-            if self.path in routes.PAGES:
-                return self._send(200, config.INDEX_HTML.read_bytes(), "text/html; charset=utf-8")
-            self._dispatch("GET")
+            if self.path.startswith("/api/"):
+                return self._dispatch("GET")
+            found = static.find(self.path.split("?")[0])
+            if not found:
+                return self._send(404, {"error": tr("http.not_found")})
+            self._send(200, *found)
 
         def do_POST(self):
             # the page is served on the LAN: refuse POSTs from another site (origin != requested host)

@@ -16,7 +16,7 @@ MODELS_FILE = ROOT / "models.json"
 SETTINGS_FILE = ROOT / "settings.json"
 LOCALES_DIR = ROOT / "locales"
 CATALOG_DIR = ROOT / "catalog"
-INDEX_HTML = ROOT / "index.html"
+WEB_DIR = ROOT / "web"  # the page: index.html, css/, js/
 
 POLL_S = 2.0
 # VRAM used by the display (Windows) and WSL with no model loaded; replaced by the real value

@@ -6,7 +6,6 @@ from typing import Callable
 from . import presenters
 
 OK = {"ok": True}
-PAGES = ("/", "/index.html", "/modeles")  # one page; /modeles = the model management view
 
 
 class NotFound(Exception):

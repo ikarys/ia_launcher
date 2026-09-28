@@ -86,6 +86,17 @@ dependencies point inwards:
 `app.py` wires the services together (composition root), `__main__.py` starts the server.
 Texts shown to the user come from `locales/<lang>.json` (same keys for the page and the server).
 
+The page is `web/`: plain HTML, CSS and native ES modules, no build step.
+
+| Path | Role |
+|---|---|
+| `index.html` | the shell of every view (header, sections, dialog) |
+| `css/` | `tokens.css` (colours, light / dark), `themes/` (cyber, pixel, neo), `base`, `dashboard`, `manage` |
+| `js/main.js` | entry point: picks the view, wires the components, reloads on events |
+| `js/views/` | `dashboard` (system panel + cards), `models-table`, `library` |
+| `js/components/` | `model-card`, `model-form`, `hf-browser`, `engine-catalog`, `sparkline` |
+| `js/*.js` | `api`, `state` (what the page knows), `events` (tiny bus), `dom`, `format`, `theme` |
+
 ## Development
 
 ```sh

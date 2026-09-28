@@ -1,0 +1,28 @@
+/* Colour tokens: light by default, dark from the system or forced with data-theme */
+:root {
+  --bg: #f6f5f1; --panel: #ffffff; --panel-2: #f0eee8; --line: #e2dfd6;
+  --text: #22211d; --muted: #6d6a60; --faint: #9a968a;
+  --accent: #367a6b; --accent-ink: #ffffff;
+  --ok: #2f8a4f; --warn: #b7791f; --err: #c0392b; --idle: #a8a497;
+  --seg-1: #3d6fd6; --seg-2: #d0782f; --seg-other: #9a968a;
+  --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151614; --panel: #1e1f1c; --panel-2: #262724; --line: #33342f;
+    --text: #ecebe6; --muted: #a3a197; --faint: #75736a;
+    --accent: #5fb3a0; --accent-ink: #0f1a17;
+    --ok: #5cc27e; --warn: #e0a64a; --err: #ec6a5c; --idle: #6b6a62;
+    --seg-1: #6f9bf0; --seg-2: #eb9a55; --seg-other: #6b6a62;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151614; --panel: #1e1f1c; --panel-2: #262724; --line: #33342f;
+  --text: #ecebe6; --muted: #a3a197; --faint: #75736a;
+  --accent: #5fb3a0; --accent-ink: #0f1a17;
+  --ok: #5cc27e; --warn: #e0a64a; --err: #ec6a5c; --idle: #6b6a62;
+  --seg-1: #6f9bf0; --seg-2: #eb9a55; --seg-other: #6b6a62;
+  color-scheme: dark;
+}

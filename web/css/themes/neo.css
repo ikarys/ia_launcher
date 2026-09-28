@@ -1,0 +1,36 @@
+/* Neo theme (black, white outlines, coral accent, condensed numbers): always dark */
+:root[data-skin="neo"] {
+  --bg: #0a0a0b; --panel: #0f0f11; --panel-2: #1a1a1d; --line: #ededed;
+  --text: #f2f2f2; --muted: #a6a6a6; --faint: #6e6e72;
+  --accent: #ff6b4a; --accent-ink: #0a0a0b;
+  --ok: #8fd3ff; --warn: #ffb347; --err: #ff5c8a; --idle: #4a4a50;
+  --seg-1: #8fd3ff; --seg-2: #ff6b4a; --seg-other: #6e6e72;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --cond: "Bebas Neue", "Oswald", sans-serif;
+  --halo: 0 0 0 1px rgba(143,211,255,.35), 0 0 14px rgba(143,211,255,.25);
+  color-scheme: dark;
+}
+[data-skin="neo"] body { font: 13px/1.5 var(--mono); }
+[data-skin="neo"] h1 { font: 34px/1 var(--cond); letter-spacing: .02em; }
+[data-skin="neo"] h1 a { display: inline-block; }
+[data-skin="neo"] h1 a::first-letter { color: var(--accent); }
+[data-skin="neo"] h2 { font: 26px/1 var(--cond); letter-spacing: .02em; }
+[data-skin="neo"] .big { font: 36px/1 var(--cond); letter-spacing: .01em; }
+[data-skin="neo"] .big small { font: 13px var(--mono); }
+[data-skin="neo"] h3, [data-skin="neo"] .kind-head h3 { font: 600 12px var(--mono); text-transform: none; letter-spacing: 0; color: var(--text); }
+[data-skin="neo"] .panel, [data-skin="neo"] dialog { border: 3px solid var(--line); border-radius: 10px; box-shadow: var(--halo); }
+[data-skin="neo"] .metric { border: 1px solid #3a3a3f; }
+[data-skin="neo"] select, [data-skin="neo"] input, [data-skin="neo"] textarea { border: 2px solid #3a3a3f; border-radius: 4px; background: var(--bg); }
+[data-skin="neo"] select:focus, [data-skin="neo"] input:focus, [data-skin="neo"] textarea:focus { outline: none; border-color: var(--line); }
+[data-skin="neo"] button, [data-skin="neo"] a.btn { font: 700 12px var(--mono); border-radius: 4px; border: 2px solid #0a0a0b;
+  background: #e6e6e6; color: #0a0a0b; box-shadow: 3px 3px 0 var(--ok); }
+[data-skin="neo"] button.primary { background: #e6e6e6; box-shadow: 3px 3px 0 var(--accent); }
+[data-skin="neo"] button.danger { background: var(--err); color: #0a0a0b; box-shadow: 3px 3px 0 #e6e6e6; }
+[data-skin="neo"] button:not(:disabled):active, [data-skin="neo"] a.btn:active { transform: translate(3px, 3px); box-shadow: none; }
+[data-skin="neo"] button:disabled { box-shadow: none; }
+[data-skin="neo"] button.link { background: none; border: none; box-shadow: none; color: var(--ok); text-decoration: underline; }
+[data-skin="neo"] .pill, [data-skin="neo"] td .tag { background: none; border: 2px solid var(--line); border-radius: 5px; }
+[data-skin="neo"] .verdict { border-radius: 4px; }
+[data-skin="neo"] .bar { height: 12px; border-radius: 3px; background: var(--panel-2); border: 1px solid #3a3a3f; }
+[data-skin="neo"] pre.log { border: 1px solid #3a3a3f; }
+[data-skin="neo"] ::selection { background: var(--accent); color: var(--bg); }

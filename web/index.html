@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IA Launcher</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23367a6b'/><path d='M11 9l13 7-13 7z' fill='white'/></svg>">
+<script>
+// theme before the first paint (no flash): the one chosen in this browser
+try { const s = localStorage.getItem("skin"); if (s) document.documentElement.dataset.skin = s; } catch {}
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Bebas+Neue&family=JetBrains+Mono:wght@400;700&display=swap">
+<!-- order matters: themes override the tokens, and come before the generic rules as they always did -->
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/themes/cyber.css">
+<link rel="stylesheet" href="/css/themes/pixel.css">
+<link rel="stylesheet" href="/css/themes/neo.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/dashboard.css">
+<link rel="stylesheet" href="/css/manage.css">
+<script type="module" src="/js/main.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><a href="/" style="color:inherit;text-decoration:none">IA Launcher</a></h1>
+    <span class="sub" id="pageName"></span>
+    <span class="sub">RTX 5090 · WSL Ubuntu · modèles dans ~/ia_models</span>
+    <span class="conn" id="conn">connexion…</span>
+    <select id="skin" title="Thème">
+      <option value="">Défaut</option>
+      <option value="cyber">Cyber</option>
+      <option value="pixel">Pixel</option>
+      <option value="neo">Neo</option>
+    </select>
+  </header>
+
+  <section class="panel sys">
+    <div>
+      <h3>VRAM <span id="gpuName" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h3>
+      <div class="big" id="vramBig">–</div>
+      <div class="bar" id="vramBar"></div>
+      <div class="legend" id="vramLegend"></div>
+    </div>
+    <div>
+      <h3>GPU</h3>
+      <div class="big" id="gpuBig">–</div>
+      <div id="gpuSpark"></div>
+      <div class="meta" id="gpuMeta"></div>
+    </div>
+    <div>
+      <h3>RAM WSL</h3>
+      <div class="big" id="ramBig">–</div>
+      <div id="ramSpark"></div>
+      <div class="meta">limite fixée par .wslconfig</div>
+    </div>
+    <div>
+      <h3>CPU</h3>
+      <div class="big" id="cpuBig">–</div>
+      <div id="cpuSpark"></div>
+      <div class="meta" id="cpuMeta"></div>
+    </div>
+  </section>
+
+  <div class="home">
+    <div class="toolbar"><a class="btn" href="/modeles">Gestion des modèles</a></div>
+    <section class="cards" id="cards"></section>
+  </div>
+
+  <div class="manage">
+  <section class="panel lib">
+    <div class="lib-head"><h3>Modèles du launcher</h3>
+      <span class="meta" style="margin:0">models.json</span>
+      <span style="margin-left:auto" class="row">
+        <button id="addModel">+ Ajouter un modèle</button>
+        <button class="link" id="reloadCfg" title="Relire models.json après l'avoir modifié à la main">Recharger models.json</button>
+      </span>
+    </div>
+    <div class="msg" id="cfgMsg"></div>
+    <div class="table-wrap"><table id="cfgTable"></table></div>
+  </section>
+
+  <section class="panel lib" id="enginesSec">
+    <div class="lib-head"><h3>Moteurs d'inférence</h3>
+      <span class="meta" style="margin:0">installés dans ~/llm, déclarés dans engines.json</span></div>
+    <div class="msg" id="engMsg"></div>
+    <div class="table-wrap"><table id="engTable"></table></div>
+  </section>
+
+  <section class="panel lib">
+    <div class="lib-head"><h3>Télécharger depuis Hugging Face</h3></div>
+    <div class="meta" id="hwLine" style="margin:0"></div>
+    <form class="row" id="hfForm">
+      <input id="hfRepo" placeholder="Dépôt Hugging Face : organisation/nom (ex. prism-ml/Ternary-Bonsai-2-27B-gguf)" required>
+      <button>Parcourir</button>
+    </form>
+    <div id="hfFiles"></div>
+    <div id="dls"></div>
+    <div class="msg" id="libMsg"></div>
+  </section>
+
+  <section class="panel lib">
+    <div class="lib-head"><h3>Bibliothèque</h3><span class="meta" id="libFree" style="margin:0"></span></div>
+    <div class="table-wrap"><table id="libTable"></table></div>
+  </section>
+  </div>
+</div>
+
+<dialog id="modelDlg">
+  <form id="modelForm">
+    <h2 id="modelTitle">Modèle</h2>
+    <div class="form">
+      <label>Nom<input name="name" required></label>
+      <label>Identifiant<input name="id" pattern="\w+" placeholder="auto" title="lettres, chiffres, _"></label>
+      <label>Type (section)<select name="kind" id="kindSel"></select></label>
+      <label>Moteur<select name="engine" id="engineSel"></select></label>
+      <label>Tâche Hugging Face<input name="task" list="taskList" placeholder="ex. text-generation"
+        title="Remplit le type (section) automatiquement"></label>
+      <label class="wide">Description<input name="desc"></label>
+      <label class="wide" id="fileField">Fichier du modèle<input name="file" list="fileList"
+        placeholder="~/ia_models/…"><span class="hint">Les fichiers de la bibliothèque sont proposés.</span></label>
+      <label>Port<input name="port" type="number" min="1024" max="65535" required></label>
+      <label>VRAM<span id="vramInfo" style="color:var(--text);padding:6px 0"></span>
+        <span class="hint">Estimée depuis la taille du fichier. Sert seulement à refuser un lancement si la VRAM libre manque.</span></label>
+      <div class="wide hint">Paramètres de lancement. Champ texte : une valeur = fixe, plusieurs séparées par des virgules
+        = menu sur la carte (la première par défaut). Vide = défaut du moteur.</div>
+      <div class="wide form" id="paramFields"></div>
+    </div>
+    <p class="msg" id="modelMsg"></p>
+    <div class="actions" style="margin-top:14px">
+      <button class="primary" value="save">Enregistrer</button>
+      <button type="button" class="link" id="modelCancel">Annuler</button>
+      <button type="button" class="link" id="modelDelete" style="margin-left:auto;color:var(--err)">Supprimer ce modèle</button>
+    </div>
+  </form>
+</dialog>
+<datalist id="taskList"></datalist>
+<datalist id="fileList"></datalist>
+</body>
+</html>

@@ -1,0 +1,115 @@
+// Management view: the models folder (downloads, Hugging Face cache, files put by hand)
+import { api } from "../api.js";
+import { installEngine } from "../components/engine-catalog.js";
+import { browse, hardwareLine, selectedVariants } from "../components/hf-browser.js";
+import { openModelForm } from "../components/model-form.js";
+import { $, esc } from "../dom.js";
+import { size } from "../format.js";
+import { state } from "../state.js";
+
+const SOURCE = { hf_cache: "cache HF", hf: "Hugging Face", local: "local" };
+let timer = null;
+
+export async function loadLibrary() {
+  clearTimeout(timer);
+  try { state.lib = await api("/api/library"); } catch (err) { $("#libMsg").textContent = err.message; return; }
+  render();
+  if (state.lib.downloads.some(d => d.state === "running")) timer = setTimeout(loadLibrary, 2000);
+}
+
+// engine for a weights file: from the engines' file_ext, installed engines first (null: none)
+function engineFor(name) {
+  const fits = Object.entries(state.engines).filter(([, e]) => e.file_ext.some(x => name.endsWith(x)));
+  return (fits.find(([, e]) => e.installed) || fits[0] || [null])[0];
+}
+
+const downloadHtml = d => `
+  <div class="dl-row">
+    <div><b>${esc(d.repo)}</b> <span class="meta">${esc(d.files.join(", "))}</span></div>
+    ${d.state === "running" ? `
+      <div class="bar"><span style="width:${Math.min(100, d.done / d.total * 100)}%;background:var(--accent)"></span></div>
+      <div class="meta">${size(d.done)} / ${size(d.total)} · <button class="link" data-cancel="${d.id}">Annuler</button></div>`
+    : `<div class="meta" style="color:${d.state === "done" ? "var(--ok)" : "var(--err)"}">${
+        { done: "Terminé", cancelled: "Annulé (le téléchargement reprendra là où il en était si tu le relances)" }[d.state] || esc(d.msg)}</div>`}
+  </div>`;
+
+const usedHtml = u => u?.length ? `<span class="used">● ${esc(u.join(", "))}</span>` : "";
+const deleteHtml = (path, label, u) => path && !u?.length
+  ? `<button class="link" data-del="${esc(path)}" data-label="${esc(label)}" style="color:var(--err)">Supprimer</button>` : "";
+const useHtml = (x, task) => x.path && engineFor(x.name) && !x.used_by?.length
+  ? `<button class="link" data-use="${esc(x.path)}" data-task="${esc(task || "")}">Ajouter comme modèle</button>` : "";
+
+function itemHtml(it) {
+  const single = it.files.length === 1 && it.files[0].path === it.path;
+  const version = [it.sha && `<code>${esc(it.sha)}</code>`, it.hf_date && `HF ${esc(it.hf_date)}`].filter(Boolean).join(" · ") || "–";
+  const head = `<tr>
+    <td><b>${esc(it.repo || it.path)}</b> <span class="tag">${esc(SOURCE[it.source] || it.source)}</span>${
+      it.task ? ` <span class="tag">${esc(it.task)}</span>` : ""}${
+      it.repo && it.source !== "hf_cache" ? `<div class="meta" style="margin:0">${esc(it.path)}</div>` : ""}</td>
+    <td>${single ? esc(it.files[0].quant || "–") : ""}</td>
+    <td>${version}</td>
+    <td class="num">${esc(single ? it.files[0].downloaded || it.date : it.date)}</td>
+    <td class="num">${size(it.size)}</td>
+    <td>${usedHtml(it.used_by)}</td>
+    <td>${single ? useHtml(it.files[0], it.task) : ""} ${deleteHtml(it.path, it.repo || it.path, it.used_by)}</td></tr>`;
+  return head + (single ? "" : it.files.map(x => `<tr class="sub">
+    <td>${esc(x.name)}</td><td>${esc(x.quant || "–")}</td><td></td>
+    <td class="num">${esc(x.downloaded || "")}</td><td class="num">${size(x.size)}</td>
+    <td>${usedHtml(x.used_by)}</td><td>${useHtml(x, it.task)} ${deleteHtml(x.path, x.name, x.used_by)}</td></tr>`).join(""));
+}
+
+function render() {
+  const lib = state.lib;
+  $("#libFree").textContent = `${lib.dir} · ${size(lib.free)} libres`;
+  if (!$("#hwLine").textContent) $("#hwLine").textContent = hardwareLine(lib.hardware);
+  $("#dls").innerHTML = lib.downloads.map(downloadHtml).join("");
+  $("#libTable").innerHTML = `<thead><tr><th>Modèle</th><th>Quant</th><th>Version</th><th>Date</th>
+    <th style="text-align:right">Taille</th><th>Utilisé par</th><th></th></tr></thead><tbody>${lib.items.map(itemHtml).join("")}</tbody>`;
+}
+
+async function downloadSelection(repo) {
+  const sel = selectedVariants();
+  if (!sel.length) return false;
+  if (sel.every(i => i.dataset.verdict === "installed")) {
+    $("#libMsg").textContent = "Déjà installé : rien à télécharger.";
+    return false;
+  }
+  const bad = sel.filter(i => ["no", "incompatible", "disk"].includes(i.dataset.verdict));
+  if (bad.length && !confirm("Cette sélection ne pourra pas tourner sur ta machine (voir l'explication). Télécharger quand même ?")) return false;
+  await api("/api/hf/download", { repo, files: sel.flatMap(i => JSON.parse(i.dataset.files)) });
+  $("#hfFiles").innerHTML = "";
+  return true;
+}
+
+function addAsModel(path, task) {
+  const name = path.split("/").pop();
+  openModelForm(null, { file: state.lib.dir + "/" + path, engine: engineFor(name), task,
+    kind: state.taskKind[task] || "llm", name: name.replace(/\.[^.]+$/, "") });
+}
+
+// -> true when the library changed (reload it)
+async function onClick(b) {
+  const d = b.dataset;
+  if (d.install) return void installEngine(d.install);
+  if (d.browse) return void browse(d.browse);
+  if (d.use) return void addAsModel(d.use, d.task);
+  if (d.quick) await api("/api/hf/download", { repo: d.quick, files: JSON.parse(d.files) });
+  else if (d.cancel) await api(`/api/hf/cancel/${d.cancel}`, {});
+  else if (d.del) {
+    if (!confirm(`Supprimer définitivement ${d.label} du disque ?`)) return false;
+    await api("/api/library/delete", { path: d.del });
+  } else if (b.id === "hfDownload") return downloadSelection(d.repo);
+  else return false;
+  return true;
+}
+
+export function bindLibrary() {
+  for (const zone of ["#hfFiles", "#dls", "#libTable"]) {
+    $(zone).addEventListener("click", async e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      $("#libMsg").textContent = "";
+      try { if (await onClick(b)) loadLibrary(); } catch (err) { $("#libMsg").textContent = err.message; }
+    });
+  }
+}

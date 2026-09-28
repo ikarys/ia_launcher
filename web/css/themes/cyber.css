@@ -1,0 +1,25 @@
+/* Cyber theme: green terminal, scanlines; always dark */
+:root[data-skin="cyber"] {
+  --bg: #000300; --panel: #020a03; --panel-2: #06140a; --line: #0f3d17;
+  --text: #b6ffc4; --muted: #3fbf5a; --faint: #237a35;
+  --accent: #00ff41; --accent-ink: #000300;
+  --ok: #00ff41; --warn: #c8ff3d; --err: #ff4d3d; --idle: #1a4d24;
+  --seg-1: #00ff41; --seg-2: #8cff9e; --seg-other: #237a35;
+  color-scheme: dark;
+}
+[data-skin="cyber"] body { font-family: var(--mono); font-size: 14px;
+  background: radial-gradient(ellipse at top, #04200b 0%, var(--bg) 60%) fixed; }
+[data-skin="cyber"] body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 999;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); }
+[data-skin="cyber"] * { border-radius: 0 !important; }
+[data-skin="cyber"] h1 { color: var(--ok); text-transform: uppercase; letter-spacing: .12em;
+  text-shadow: 0 0 4px var(--ok), 0 0 12px var(--ok); }
+[data-skin="cyber"] h1::before { content: "> "; }
+[data-skin="cyber"] h1::after { content: "_"; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+[data-skin="cyber"] .panel, [data-skin="cyber"] dialog { box-shadow: 0 0 0 1px var(--line), 0 0 18px rgba(0,255,65,.08); }
+[data-skin="cyber"] button, [data-skin="cyber"] a.btn { text-transform: uppercase; letter-spacing: .06em; font-size: 12px; }
+[data-skin="cyber"] button.primary, [data-skin="cyber"] button.danger { color: var(--accent-ink); }
+[data-skin="cyber"] button:not(:disabled):hover, [data-skin="cyber"] a.btn:hover { box-shadow: 0 0 10px currentColor; }
+[data-skin="cyber"] .bar > span { box-shadow: 0 0 8px currentColor; }
+[data-skin="cyber"] ::selection { background: var(--accent); color: var(--bg); }
