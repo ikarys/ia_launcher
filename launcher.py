@@ -691,6 +691,14 @@ def lib_delete(rel):
 
 # --- Launcher ---------------------------------------------------------------------
 
+# ES_CONTINUOUS | ES_SYSTEM_REQUIRED until stdin closes (the screen may still turn off).
+# None outside WSL or with interop disabled: no sleep blocking.
+POWERSHELL = shutil.which("powershell.exe", path=os.environ.get("PATH", "") + ":/mnt/c/Windows/System32/WindowsPowerShell/v1.0")  # systemd: no Windows PATH
+NO_SLEEP_PS = r'''Add-Type -Namespace W -Name P -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint f);'
+[void][W.P]::SetThreadExecutionState([uint32]"0x80000001")
+[void][Console]::In.ReadLine()'''
+
+
 class Launcher:
     def __init__(self):
         self.lock = threading.RLock()
@@ -702,6 +710,7 @@ class Launcher:
         self.pcache = {}      # pid -> psutil.Process (cpu_percent a besoin de l'historique)
         self.snapshot = {"ready": False}
         self.ip = lan_ip()
+        self.awake = None     # PowerShell process holding off Windows sleep
         LOG_DIR.mkdir(exist_ok=True)
 
     # -- boucle de mesure
@@ -797,6 +806,18 @@ class Launcher:
             "cpu": {"pct": psutil.cpu_percent(None), "count": ncpu},
             "models": out,
         }
+        self.keep_awake(any(o["pids"] for o in out.values()))
+
+    # -- Windows sleep: blocked while a model is loaded
+    def keep_awake(self, on):
+        if not POWERSHELL or on == (self.awake is not None and self.awake.poll() is None):
+            return
+        if on:  # released when the process ends, including when the launcher dies (stdin closes)
+            self.awake = subprocess.Popen([POWERSHELL, "-NoProfile", "-NonInteractive", "-Command", NO_SLEEP_PS],
+                                          stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            self.awake.stdin.close()  # EOF -> the PowerShell process exits and Windows may sleep again
+            self.awake = None
 
     # -- actions
     def start(self, mid, opts):

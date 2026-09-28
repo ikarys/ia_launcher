@@ -7,6 +7,7 @@ Laya decision model) under WSL, and see their VRAM / RAM / CPU usage.
 - Per-model VRAM tracking (inferred: `nvidia-smi` under WSL doesn't report per-process memory)
 - Add / edit models and download from Hugging Face from the page
 - Port conflict detection
+- Windows sleep blocked while a model is loaded (via WSL interop)
 
 ## Getting started
 
