@@ -3,7 +3,7 @@
 Two parts, no build step: a Python server (standard library + `psutil` + `huggingface_hub`) and a page
 made of plain HTML, CSS and native ES modules.
 
-## Server: the `ialauncher` package
+## Server: the `hominfer` package
 
 Layers whose dependencies point inwards: `web` → `services` → `domain`, with `infra` for system access.
 `domain` imports nothing from the other layers and does no I/O.
@@ -25,7 +25,7 @@ Layers whose dependencies point inwards: `web` → `services` → `domain`, with
 
 | Path | Role |
 |---|---|
-| `index.html` | the shell of every view (header, sections, dialogs), rendered in the UI language by `ialauncher/web/page.py` |
+| `index.html` | the shell of every view (header, sections, dialogs), rendered in the UI language by `hominfer/web/page.py` |
 | `css/` | `tokens.css` (colours, light / dark), `themes/` (cyber, pixel, neo), `base`, `dashboard`, `manage` |
 | `js/main.js` | entry point: picks the view, wires the components, reloads on events |
 | `js/views/` | `dashboard` (system panel + cards), `models-table`, `library`, `settings` |

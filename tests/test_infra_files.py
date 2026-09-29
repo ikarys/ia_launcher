@@ -1,6 +1,6 @@
 import json
 
-from ialauncher.infra.files import compact_json, tail
+from hominfer.infra.files import compact_json, tail
 
 
 def test_compact_json_round_trips_and_keeps_lines_short():

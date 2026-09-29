@@ -1,16 +1,16 @@
 """Print, for every model of models.json and each of its profiles, the command and env the
 launcher would run (nothing is started).
-    venv-launcher/bin/python scripts/show-commands.py"""
+    venv-hominfer/bin/python scripts/show-commands.py"""
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from ialauncher import config  # noqa: E402
-from ialauncher.domain import engine as engine_rules  # noqa: E402
-from ialauncher.domain.model import clean_options  # noqa: E402
-from ialauncher.infra import gpu as gpu_probe  # noqa: E402
-from ialauncher.services.registry import Registry  # noqa: E402
-from ialauncher.services.settings import Settings  # noqa: E402
+from hominfer import config  # noqa: E402
+from hominfer.domain import engine as engine_rules  # noqa: E402
+from hominfer.domain.model import clean_options  # noqa: E402
+from hominfer.infra import gpu as gpu_probe  # noqa: E402
+from hominfer.services.registry import Registry  # noqa: E402
+from hominfer.services.settings import Settings  # noqa: E402
 
 models_dir = Settings(config.SETTINGS_FILE).models_dir()
 registry = Registry(config.ENGINES_FILE, config.MODELS_FILE, listen_port=config.LISTEN_PORT)

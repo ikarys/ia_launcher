@@ -5,14 +5,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 HOME = Path.home()
 
-LISTEN_HOST = os.environ.get("IA_LAUNCHER_HOST", "0.0.0.0")
-LISTEN_PORT = int(os.environ.get("IA_LAUNCHER_PORT", "8090"))
+LISTEN_HOST = os.environ.get("HOMINFER_HOST", "0.0.0.0")
+LISTEN_PORT = int(os.environ.get("HOMINFER_PORT", "8090"))
 
-DEFAULT_MODELS_DIR = os.environ.get("IA_LAUNCHER_MODELS_DIR", "~/ia_models")  # changed in Settings
+DEFAULT_MODELS_DIR = os.environ.get("HOMINFER_MODELS_DIR", "~/hominfer_models")  # changed in Settings
 LOG_DIR = ROOT / "logs"
 
 # engines.json, models.json, settings.json: local, never versioned
-CONFIG_DIR = Path(os.environ.get("IA_LAUNCHER_CONFIG_DIR", ROOT)).expanduser()
+CONFIG_DIR = Path(os.environ.get("HOMINFER_CONFIG_DIR", ROOT)).expanduser()
 ENGINES_FILE = CONFIG_DIR / "engines.json"
 MODELS_FILE = CONFIG_DIR / "models.json"
 SETTINGS_FILE = CONFIG_DIR / "settings.json"

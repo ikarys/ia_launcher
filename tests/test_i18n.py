@@ -1,4 +1,4 @@
-from ialauncher import i18n
+from hominfer import i18n
 
 
 def test_every_locale_has_every_english_key():

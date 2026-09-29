@@ -1,7 +1,7 @@
 import pytest
 
-from ialauncher.errors import LaunchError
-from ialauncher.services import folders
+from hominfer.errors import LaunchError
+from hominfer.services import folders
 
 
 def test_lists_folders_only(tmp_path):

@@ -1,11 +1,11 @@
 """Print the launcher's verdicts (does it run here? which engine?) for Hugging Face repositories,
 without starting the server.
-    venv-launcher/bin/python scripts/check-hf.py org/repo [org/repo ...]"""
+    venv-hominfer/bin/python scripts/check-hf.py org/repo [org/repo ...]"""
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from ialauncher.app import build  # noqa: E402
+from hominfer.app import build  # noqa: E402
 
 if len(sys.argv) < 2:
     sys.exit(__doc__)

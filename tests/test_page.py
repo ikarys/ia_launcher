@@ -4,8 +4,8 @@ import re
 
 import pytest
 
-from ialauncher import config, i18n
-from ialauncher.web import page
+from hominfer import config, i18n
+from hominfer.web import page
 
 JS_KEY = re.compile(r"""\bt\(\s*["']([\w.]+)["']""")
 # keys built at run time: prefix + a value the page knows
@@ -21,7 +21,7 @@ DYNAMIC = {"ui.theme.": ["auto", "light", "dark", "cyber", "pixel", "neo"],
 
 class FakeSettings:
     def __init__(self, lang, theme="cyber"):
-        self.values = {"lang": lang, "theme": theme, "models_dir": "~/ia_models"}
+        self.values = {"lang": lang, "theme": theme, "models_dir": "~/hominfer_models"}
 
 
 def page_literals():

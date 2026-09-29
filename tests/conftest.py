@@ -1,7 +1,7 @@
 import pytest
 
-from ialauncher import i18n
-from ialauncher.domain import engine as engine_rules
+from hominfer import i18n
+from hominfer.domain import engine as engine_rules
 
 
 @pytest.fixture(autouse=True)

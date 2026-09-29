@@ -1,6 +1,6 @@
 import json
 
-from ialauncher.services.registry import Registry
+from hominfer.services.registry import Registry
 
 ENGINE = {"label": "Test engine", "kinds": ["llm"], "file_ext": [".gguf"],
           "command": ["/bin/serve", "-m", "{file}", "--port", "{port}"],

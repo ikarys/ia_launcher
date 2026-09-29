@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from ialauncher.domain import engine as engine_rules
-from ialauncher.errors import LaunchError
+from hominfer.domain import engine as engine_rules
+from hominfer.errors import LaunchError
 
 from .conftest import make_engine
 

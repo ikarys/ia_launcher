@@ -5,11 +5,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ialauncher.config import CATALOG_DIR
-from ialauncher.domain import compat
-from ialauncher.i18n import set_lang
-from ialauncher.infra import huggingface as hf
-from ialauncher.services.catalog import Catalog
+from hominfer.config import CATALOG_DIR
+from hominfer.domain import compat
+from hominfer.i18n import set_lang
+from hominfer.infra import huggingface as hf
+from hominfer.services.catalog import Catalog
 
 set_lang("en")
 class Reg:  # minimal registry stub: no engine configured, nothing installed

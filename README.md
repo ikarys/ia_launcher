@@ -1,4 +1,4 @@
-# IA Launcher
+# Hominfer
 
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![License MIT](https://img.shields.io/badge/license-MIT-green)
@@ -44,8 +44,8 @@ Linux / WSL2, NVIDIA.
 ## Getting started
 
 ```sh
-git clone https://github.com/ikarys/ia_launcher.git
-cd ia_launcher
+git clone https://github.com/ikarys/hominfer.git
+cd hominfer
 just run              # http://localhost:8090, also reachable from the LAN
 ```
 

@@ -1,4 +1,4 @@
-// Texts in the UI language, injected by the server in <script id="boot"> (see ialauncher/web/page.py)
+// Texts in the UI language, injected by the server in <script id="boot"> (see hominfer/web/page.py)
 const boot = JSON.parse(document.getElementById("boot").textContent);
 
 // settings of the launcher (settings.json), and the choices offered

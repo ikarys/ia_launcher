@@ -1,7 +1,7 @@
-# Starts IA Launcher at boot: http://0.0.0.0:8090 (reachable from the LAN)
+# Starts Hominfer at boot: http://0.0.0.0:8090 (reachable from the LAN)
 # Install with: just install-service
 [Unit]
-Description=IA Launcher
+Description=Hominfer
 After=network.target
 
 [Service]

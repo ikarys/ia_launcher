@@ -1,6 +1,6 @@
 # Configuration
 
-The launcher keeps three local JSON files next to the code (or in `IA_LAUNCHER_CONFIG_DIR`). None of them
+The launcher keeps three local JSON files next to the code (or in `HOMINFER_CONFIG_DIR`). None of them
 is versioned, and all three are optional: the launcher starts with no engine, no model and the default
 settings.
 
@@ -58,7 +58,7 @@ The models, written by the page. Per model:
 ## `settings.json`
 
 Set from the Settings page and shared by every browser: `lang`, `theme`, `models_dir` (default
-`~/ia_models`: downloads land there, and engines that fetch their own weights keep them there).
+`~/hominfer_models`: downloads land there, and engines that fetch their own weights keep them there).
 
 ## Text in several languages
 
@@ -70,11 +70,11 @@ UI language, falling back to English.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `IA_LAUNCHER_HOST` | `0.0.0.0` | listen address (`127.0.0.1` = this machine only) |
-| `IA_LAUNCHER_PORT` | `8090` | listen port |
-| `IA_LAUNCHER_CONFIG_DIR` | the project folder | where the three JSON files live |
-| `IA_LAUNCHER_MODELS_DIR` | `~/ia_models` | models folder until one is set in Settings |
+| `HOMINFER_HOST` | `0.0.0.0` | listen address (`127.0.0.1` = this machine only) |
+| `HOMINFER_PORT` | `8090` | listen port |
+| `HOMINFER_CONFIG_DIR` | the project folder | where the three JSON files live |
+| `HOMINFER_MODELS_DIR` | `~/hominfer_models` | models folder until one is set in Settings |
 | `HF_TOKEN` | | Hugging Face token, for gated or private models |
 
-With the systemd service, set them in an override: `sudo systemctl edit ia-launcher`, then
-`[Service]` / `Environment=IA_LAUNCHER_PORT=9000`.
+With the systemd service, set them in an override: `sudo systemctl edit hominfer`, then
+`[Service]` / `Environment=HOMINFER_PORT=9000`.

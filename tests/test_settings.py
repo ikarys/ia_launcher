@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from ialauncher import i18n
-from ialauncher.errors import LaunchError
-from ialauncher.services.settings import DEFAULTS, Settings
+from hominfer import i18n
+from hominfer.errors import LaunchError
+from hominfer.services.settings import DEFAULTS, Settings
 
 
 @pytest.fixture
@@ -29,8 +29,8 @@ def test_update_writes_the_file_and_the_language(path, tmp_path):
 
 def test_models_dir_accepts_home_paths(path):
     s = Settings(path)
-    s.update({"models_dir": "~/ia_models"})
-    assert s.models_dir() == Path.home() / "ia_models"
+    s.update({"models_dir": "~/hominfer_models"})
+    assert s.models_dir() == Path.home() / "hominfer_models"
 
 
 @pytest.mark.parametrize("change, message", [

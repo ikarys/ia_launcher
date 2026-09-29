@@ -1,6 +1,6 @@
 import pytest
 
-from ialauncher.domain.status import model_state, model_vram
+from hominfer.domain.status import model_state, model_vram
 
 
 @pytest.mark.parametrize("kw, expected", [

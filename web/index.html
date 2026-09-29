@@ -1,10 +1,10 @@
 <!doctype html>
-<!-- Rendered by ialauncher/web/page.py: texts (t:<key> in double braces), language, default theme, boot data -->
+<!-- Rendered by hominfer/web/page.py: texts (t:<key> in double braces), language, default theme, boot data -->
 <html lang="{{LANG}}" data-default-theme="{{THEME}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IA Launcher</title>
+<title>Hominfer</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23367a6b'/><path d='M11 9l13 7-13 7z' fill='white'/></svg>">
 <script>
 // the theme chosen in Settings, before the first paint (no flash)
@@ -29,7 +29,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1><a href="/" style="color:inherit;text-decoration:none">IA Launcher</a></h1>
+    <h1><a href="/" style="color:inherit;text-decoration:none">Hominfer</a></h1>
     <span class="conn" id="conn"></span>
     <nav class="nav">
       <a href="/" data-view="home">{{t:ui.nav.dashboard}}</a>
@@ -136,7 +136,7 @@
         title="{{t:ui.form.task_hint}}"></label>
       <label class="wide">{{t:ui.form.desc}}<input name="desc"></label>
       <label class="wide" id="fileField">{{t:ui.form.file}}<input name="file" list="fileList"
-        placeholder="~/ia_models/…"><span class="hint">{{t:ui.form.file_hint}}</span></label>
+        placeholder="~/hominfer_models/…"><span class="hint">{{t:ui.form.file_hint}}</span></label>
       <label>{{t:ui.form.port}}<input name="port" type="number" min="1024" max="65535" required></label>
       <label>{{t:ui.form.vram}}<span id="vramInfo" style="color:var(--text);padding:6px 0"></span>
         <span class="hint">{{t:ui.form.vram_hint}}</span></label>

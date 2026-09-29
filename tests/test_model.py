@@ -1,7 +1,7 @@
 import pytest
 
-from ialauncher.domain import model as model_rules
-from ialauncher.errors import LaunchError
+from hominfer.domain import model as model_rules
+from hominfer.errors import LaunchError
 
 from .conftest import make_engine
 

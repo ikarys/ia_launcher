@@ -184,7 +184,7 @@
   "ui.folder.up": "Parent folder",
   "ui.folder.choose": "Choose this folder",
   "ui.folder.empty": "No subfolder.",
-  "ui.set.models_dir_hint": "Where downloads go and engines keep their weights (default ~/ia_models). Files already there are not moved.",
+  "ui.set.models_dir_hint": "Where downloads go and engines keep their weights (default ~/hominfer_models). Files already there are not moved.",
   "ui.set.saved": "Saved.",
 
   "kind.llm": "LLM",

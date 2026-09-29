@@ -2,8 +2,8 @@ import threading
 
 import pytest
 
-from ialauncher.errors import LaunchError
-from ialauncher.services.jobs import Jobs
+from hominfer.errors import LaunchError
+from hominfer.services.jobs import Jobs
 
 
 def wait(job):

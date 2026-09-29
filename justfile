@@ -4,28 +4,30 @@ default: run
 run:
     ./run.sh
 
-# Run the tests (installs the dev requirements in venv-launcher first)
+# Run the tests (installs the dev requirements in venv-hominfer first)
 test:
-    [ -x venv-launcher/bin/python ] || uv venv -q --python 3.12 venv-launcher
-    uv pip install -q --python venv-launcher/bin/python -r requirements-dev.txt
-    venv-launcher/bin/python -m pytest -q
+    rm -rf venv-launcher  # pre-rename venv
+    [ -x venv-hominfer/bin/python ] || uv venv -q --python 3.12 venv-hominfer
+    uv pip install -q --python venv-hominfer/bin/python -r requirements-dev.txt
+    venv-hominfer/bin/python -m pytest -q
 
 # Start the launcher at boot (systemd service)
 install-service:
-    sudo rm -f /etc/systemd/system/ia-launcher.service  # old install = symlink to the template
-    sed "s|@USER@|$USER|; s|@DIR@|$PWD|" ia-launcher.service | sudo tee /etc/systemd/system/ia-launcher.service >/dev/null
+    sudo rm -f /etc/systemd/system/hominfer.service  # old install = symlink to the template
+    sed "s|@USER@|$USER|; s|@DIR@|$PWD|" hominfer.service | sudo tee /etc/systemd/system/hominfer.service >/dev/null
     sudo systemctl daemon-reload
-    sudo systemctl enable --now ia-launcher
+    sudo systemctl disable --now ia-launcher 2>/dev/null || true  # pre-rename unit
+    sudo systemctl enable --now hominfer
 
 logs-service:
-    journalctl -u ia-launcher -f
+    journalctl -u hominfer -f
 
 start:
-    sudo systemctl start ia-launcher
+    sudo systemctl start hominfer
 
 stop:
-    sudo systemctl stop ia-launcher
+    sudo systemctl stop hominfer
 
 # After a code change (also stops the models it started)
 restart:
-    sudo systemctl restart ia-launcher
+    sudo systemctl restart hominfer

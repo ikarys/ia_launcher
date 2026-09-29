@@ -50,7 +50,7 @@ For gated models, accept the license on huggingface.co and start the launcher wi
 
 ## Add a model file you already have
 
-Copy the file into the models folder (default `~/ia_models`): it shows up in **Library**, then
+Copy the file into the models folder (default `~/hominfer_models`): it shows up in **Library**, then
 **Add as a model**. Or use **Models → Add a model** and type the file's full path.
 
 Files on a Windows drive (`/mnt/c`, `/mnt/d`) work under WSL but load much slower than files inside

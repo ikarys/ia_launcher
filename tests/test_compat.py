@@ -1,4 +1,4 @@
-from ialauncher.domain import compat
+from hominfer.domain import compat
 
 from .conftest import make_engine
 

@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from ialauncher import config
-from ialauncher.domain import engine as engine_rules
+from hominfer import config
+from hominfer.domain import engine as engine_rules
 
 CATALOG = json.loads((config.CATALOG_DIR / "catalog.json").read_text())
 

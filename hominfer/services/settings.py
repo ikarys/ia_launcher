@@ -12,7 +12,7 @@ DEFAULTS = {"lang": i18n.DEFAULT_LANG, "theme": "auto", "models_dir": config.DEF
 
 
 def _folder(text):
-    """'~/ia_models' -> Path, or None when it isn't an absolute path."""
+    """'~/hominfer_models' -> Path, or None when it isn't an absolute path."""
     p = Path(str(text).strip()).expanduser()
     return p if str(text).strip() and p.is_absolute() else None
 

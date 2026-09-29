@@ -12,7 +12,7 @@ MAX_BODY = 1 << 20
 
 def make_handler(app):
     class Handler(BaseHTTPRequestHandler):
-        server_version = "ia-launcher"
+        server_version = "hominfer"
 
         def log_message(self, fmt, *args):
             pass

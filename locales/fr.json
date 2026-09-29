@@ -184,7 +184,7 @@
   "ui.folder.up": "Dossier parent",
   "ui.folder.choose": "Choisir ce dossier",
   "ui.folder.empty": "Aucun sous-dossier.",
-  "ui.set.models_dir_hint": "Là où vont les téléchargements et où les moteurs rangent leurs poids (par défaut ~/ia_models). Les fichiers déjà présents ne sont pas déplacés.",
+  "ui.set.models_dir_hint": "Là où vont les téléchargements et où les moteurs rangent leurs poids (par défaut ~/hominfer_models). Les fichiers déjà présents ne sont pas déplacés.",
   "ui.set.saved": "Enregistré.",
 
   "kind.llm": "LLM",

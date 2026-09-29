@@ -5,7 +5,7 @@ source "$(dirname "$0")/lib.sh"
 need uv
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
-export HF_HUB_CACHE="${MODELS_DIR:-$HOME/ia_models}/hf"
+export HF_HUB_CACHE="${MODELS_DIR:-$HOME/hominfer_models}/hf"
 [ -x .venv/bin/python ] || uv venv -q --python 3.12 .venv
 step "Installing laya[serve]"
 uv pip install -q --python .venv/bin/python "laya[serve]"

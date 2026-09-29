@@ -15,7 +15,7 @@ def shortcuts():
 
 
 def browse(text):
-    """'~/ia_models' -> {path, parent, dirs, shortcuts}; the folder has to exist."""
+    """'~/hominfer_models' -> {path, parent, dirs, shortcuts}; the folder has to exist."""
     p = Path(str(text or "~").strip() or "~").expanduser()
     if not p.is_absolute() or not p.is_dir():
         raise LaunchError(tr("folders.not_a_folder", path=text))

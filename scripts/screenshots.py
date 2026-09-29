@@ -59,9 +59,9 @@ def demo_setup():
 
 
 def start_launcher(cfg, models, port):
-    env = dict(os.environ, IA_LAUNCHER_CONFIG_DIR=str(cfg), IA_LAUNCHER_MODELS_DIR=str(models),
-               IA_LAUNCHER_PORT=str(port), IA_LAUNCHER_HOST="127.0.0.1")
-    proc = subprocess.Popen([str(ROOT / "venv-launcher" / "bin" / "python"), "-m", "ialauncher"],
+    env = dict(os.environ, HOMINFER_CONFIG_DIR=str(cfg), HOMINFER_MODELS_DIR=str(models),
+               HOMINFER_PORT=str(port), HOMINFER_HOST="127.0.0.1")
+    proc = subprocess.Popen([str(ROOT / "venv-hominfer" / "bin" / "python"), "-m", "hominfer"],
                             cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     base = f"http://127.0.0.1:{port}"
     for _ in range(150):

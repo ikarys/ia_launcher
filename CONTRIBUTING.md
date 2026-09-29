@@ -5,7 +5,7 @@ Thanks for your interest! Bug reports, engine recipes, translations and fixes ar
 ## Development setup
 
 ```sh
-just test          # creates venv-launcher if needed, installs requirements-dev.txt, runs pytest
+just test          # creates venv-hominfer if needed, installs requirements-dev.txt, runs pytest
 just run           # the launcher on http://localhost:8090
 ```
 
@@ -13,7 +13,7 @@ To try a change without touching your real configuration, run a second instance 
 config folder:
 
 ```sh
-IA_LAUNCHER_PORT=8091 IA_LAUNCHER_CONFIG_DIR=/tmp/ia-dev venv-launcher/bin/python -m ialauncher
+HOMINFER_PORT=8091 HOMINFER_CONFIG_DIR=/tmp/hominfer-dev venv-hominfer/bin/python -m hominfer
 ```
 
 The page has no build step: edit `web/`, reload the browser. Python changes need a restart of the

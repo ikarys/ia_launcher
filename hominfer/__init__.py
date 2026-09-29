@@ -1,4 +1,4 @@
-"""IA Launcher: web page to start / stop local AI models and see their VRAM / RAM / CPU usage.
+"""Hominfer: web page to start / stop local AI models and see their VRAM / RAM / CPU usage.
 
 Models (models.json) run on inference engines (engines.json): nothing model- or engine-specific
 lives in the code.

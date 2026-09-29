@@ -1,4 +1,4 @@
-"""Entry point: python -m ialauncher (see run.sh)."""
+"""Entry point: python -m hominfer (see run.sh)."""
 import os
 import signal
 import threading
@@ -20,7 +20,7 @@ def main():
         signal.signal(sig, stop)
     app.supervisor.poll()
     threading.Thread(target=app.supervisor.run_forever, args=(config.POLL_S,), daemon=True).start()
-    print(f"IA Launcher: http://{config.LISTEN_HOST}:{config.LISTEN_PORT}   (Ctrl+C to stop)", flush=True)
+    print(f"Hominfer: http://{config.LISTEN_HOST}:{config.LISTEN_PORT}   (Ctrl+C to stop)", flush=True)
     server.serve_forever()
 
 
