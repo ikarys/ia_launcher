@@ -10,7 +10,7 @@ from ..errors import LaunchError
 from ..i18n import tr
 from ..infra import huggingface as hf
 from ..infra.files import size_of
-from .downloads import META
+from .downloads import LEGACY_META, META
 
 WEIGHTS = (".gguf", ".safetensors", ".ninfer", ".bin", ".pt", ".pth", ".onnx")
 HF_CACHE = "hf"  # engines fetching their own weights keep them in <models dir>/hf
@@ -67,7 +67,8 @@ class Library:
 
     def _entry(self, p):
         """A folder downloaded from the page (with its META) or a file / folder put by hand."""
-        meta = json.loads((p / META).read_text()) if (p / META).exists() else None
+        meta_f = p / META if (p / META).exists() else p / LEGACY_META
+        meta = json.loads(meta_f.read_text()) if meta_f.exists() else None
         files = [p] if p.is_file() else [f for f in sorted(p.rglob("*"))
                                           if f.is_file() and f.name.endswith(WEIGHTS) and ".cache" not in f.parts]
 

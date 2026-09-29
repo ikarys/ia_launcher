@@ -10,7 +10,8 @@ from ..infra import huggingface as hf
 from ..infra.files import size_of, tail
 from .jobs import Jobs
 
-META = ".ia_meta.json"  # next to downloaded files: repository, commit, dates
+META = ".hominfer_meta.json"  # next to downloaded files: repository, commit, dates
+LEGACY_META = ".ia_meta.json"  # pre-rename
 FREE_MARGIN = 5 * 2**30
 
 
